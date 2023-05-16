@@ -1,4 +1,6 @@
 ﻿@page "/"
+@using dexConvert.Domains.ApiModels
+@inject IApiRepository _apiRepository
 
 <PageTitle>Index</PageTitle>
 
@@ -7,3 +9,22 @@
 Welcome to your new app.
 
 <SurveyPrompt Title="How is Blazor working for you?"/>
+
+@code
+{
+
+    private async Task LoadManga()
+    {
+        try
+        {
+            ApiCollectionResponse _ = await _apiRepository.GetManga("Attack on Titan");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+    
+    
+}
