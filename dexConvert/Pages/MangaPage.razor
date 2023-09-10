@@ -1,0 +1,170 @@
+﻿@page "/Manga/{Id}"
+@using dexConvert.Domains.ApiModels
+@using dexConvert.Services
+@using MudBlazor
+@using dexConvert.Domains
+@using dexConvert.Helper
+@using System.Globalization
+@using dexConvert.Worker
+@inject IMangaService MangaService
+@inject NavigationManager NavigationManager
+@inject IPreferenceService PreferenceService
+@inject IDownloadWorker DownloadWorker
+
+
+<style>
+    .mud-table-cell-custom-group {
+        font-weight: 500;
+    }
+
+</style>
+<MudOverlay @bind-Visible="_popupOpen" DarkBackground="true" AutoClose="false">
+    <Downloader OnComplete="@DownloaderFinished" OnAbort="@DownloaderFinished" @ref="downloader"></Downloader>
+</MudOverlay>
+@if (_loading)
+{
+    <MudGrid>
+        <MudItem Class="d-flex flex-column align-center justify-center mud-width-full" xs="12">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true"/>
+        </MudItem>
+    </MudGrid>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12">
+            @if(_manga is not null)
+            {
+                <MudGrid Class="pa-2">
+                    <MudItem xs="3">
+                        <MudImage Src="@_manga.CoverLink" Height="256">
+                            
+                        </MudImage>
+                    </MudItem>
+                    <MudItem xs="9">
+                        <MudText Typo="Typo.h4" Align="Align.Left">
+                            @_manga.Attributes?.Title?.GetLocalizedTitle(PreferenceService.GetCulturePreference())
+                        </MudText>
+                        <MudText Typo="Typo.body1" Align="Align.Left">
+                            @_manga.Attributes?.Description?.GetLocalizedTitle(PreferenceService.GetCulturePreference())
+                        </MudText>
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Filled">
+                    Failed to load manga
+                </MudAlert>
+            }
+        </MudItem>
+        <MudItem xs="12">
+            @if (_loadedChapters is {Count: > 0 })
+            {
+                <MudTable Hover="true" 
+                          Breakpoint="Breakpoint.Sm"
+                          FixedHeader="true"
+                          Items="_loadedChapters" 
+                          GroupBy="_groupDefinition"
+                          MultiSelection="false">
+                    <GroupHeaderTemplate>
+                        <MudTh Class="mud-table-cell-custom-group" colspan="1">
+                            @($"{context.GroupName}: {context.Key}")
+                        </MudTh>
+                        <MudTh Class="mud-table-cell-custom-group" colspan="2"></MudTh>
+                        <MudTh Class="mud-table-cell-custom-group" colspan="1">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="() => DownloadVolume(context.Key.ToString())">Download</MudButton>
+                        </MudTh>
+                    </GroupHeaderTemplate>
+                    <RowTemplate>
+                        <MudTd>Chapter @(context.Attributes.Chapter ?? "Unknown")</MudTd>
+                        <MudTd>@(context.Attributes.Title ?? "Unknown")</MudTd>
+                        <MudTd>@(context.Attributes.TranslatedLanguage ?? "Unknown")</MudTd>
+                        <MudTd><MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="() => DownloadChapter(context.Id,context.Attributes.Chapter)">Download</MudButton></MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
+                    No volumes or chapters found.
+                </MudAlert>
+            }
+        </MudItem>
+    </MudGrid>    
+}
+
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+    
+    private Manga? _manga;
+    
+    private bool _loading = true;
+    
+    private bool _popupOpen = false;
+    
+    private List<Chapter> _loadedChapters = new List<Chapter>();
+    
+    private Downloader downloader;
+    
+    private Guid _selectedChapterId = Guid.Empty;
+    
+    private readonly TableGroupDefinition<Chapter> _groupDefinition = new TableGroupDefinition<Chapter>
+    {
+        GroupName = "Volume",
+        Indentation = true,
+        Expandable = true,
+        IsInitiallyExpanded = false,
+        Selector = (c) => c.Attributes.Volume ?? "Unknown"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        PreferenceService.OnPreferenceChanged += OnLangChanged;
+        _manga = MangaService.GetFromCache(Guid.Parse(Id!));
+        _loadedChapters = await MangaService.GetChapters(Guid.Parse(Id!), PreferenceService.GetCulturePreference().TwoLetterISOLanguageName, PreferenceService.GetDeepSearch());
+        _loadedChapters = _loadedChapters.OrderBy(o => o.Attributes.Chapter ?? "Unknown").ToList();
+        _loading = false;
+    }
+
+    private async void OnLangChanged(object? sender, CultureInfo e)
+    {
+        _loading = true;
+        StateHasChanged();
+        _loadedChapters = await MangaService.GetChapters(Guid.Parse(Id!), PreferenceService.GetCulturePreference().TwoLetterISOLanguageName);
+        _loadedChapters = _loadedChapters.OrderBy(o => o.Attributes.Chapter ?? "Unknown").ToList();
+        _loading = false;
+        StateHasChanged();
+    }
+
+    private async void DownloadChapter(Guid chapterId, string chapterNumber)
+    {
+        _popupOpen = true;
+        await Task.Delay(100);
+        downloader.Activate(DownloadWorker,chapterId,_manga!.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetCulturePreference()), chapterNumber);
+    }
+    
+    private async void DownloadVolume(string? volumeNumber)
+    {
+        _popupOpen = true;
+        await Task.Delay(100);
+        List<Guid> chapters = _loadedChapters.Where(c => c.Attributes.Volume == volumeNumber).Select( c => c.Id).ToList();
+        downloader.Activate(DownloadWorker, chapters, _manga!.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetCulturePreference()), volumeNumber!);
+        
+    }
+    
+
+    private void DownloaderFinished()
+    {
+        _popupOpen = false;
+        StateHasChanged();
+    }
+
+
+
+
+
+
+}

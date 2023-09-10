@@ -3,33 +3,50 @@ using Microsoft.VisualBasic;
 
 namespace dexConvert.Domains.ApiModels;
 
-public class Manga : ApiData
+
+
+public class MangaSearchResponse : ApiResponse
+{
+
+    [JsonPropertyName("result")]
+    public string? Result { get; set; }
+
+    [JsonPropertyName("response")]
+    public string? Response { get; set; }
+    
+    [JsonPropertyName("data")]
+    public IList<Manga> Data { get; set; } = new List<Manga>();
+}
+
+public class Manga 
 {
     [JsonPropertyName("id")]
     public Guid Id { get; set; }
 
     [JsonPropertyName("type")]
-    public ApiEnumCollection.MediaType Type { get; set; }
+    public string? Type { get; set; }
 
     [JsonPropertyName("attributes")]
     public MangaAttributes? Attributes { get; set; }
+    
+    [JsonPropertyName("relationships")]
+    public List<Relationships>? Relationships { get; set; }
 
-
+    [JsonIgnore]
+    public string? CoverLink { get; set; }
+    
 }
 
 public class MangaAttributes
 {
     [JsonPropertyName("title")]
-    [JsonExtensionData]
-    public IDictionary<string, string> Title { get; set; } = new Dictionary<string, string>();
+    public LocalizedString? Title { get; set; }
 
     [JsonPropertyName("altTitles")]
-    [JsonExtensionData]
-    public IDictionary<string, string> AltTitles { get; set; } = new Dictionary<string, string>();
+    public List<LocalizedString>? AltTitles { get; set; }
     
     [JsonPropertyName("description")]
-    [JsonExtensionData]
-    public IDictionary<string, string> Description { get; set; } = new Dictionary<string, string>();
+    public LocalizedString? Description { get; set; } 
 
     [JsonPropertyName("isLocked")]
     public bool IsLocked { get; set; }
@@ -44,25 +61,25 @@ public class MangaAttributes
     public string? LastChapter { get; set; }
 
     [JsonPropertyName("publicationDemographic")]
-    public ApiEnumCollection.PublicationDemographic PublicationDemographic { get; set; }
+    public string? PublicationDemographic { get; set; }
     
     [JsonPropertyName("status")]
-    public ApiEnumCollection.Status Status { get; set; }
+    public string? Status { get; set; }
 
     [JsonPropertyName("year")]
-    public int Year { get; set; }
+    public int? Year { get; set; }
 
     [JsonPropertyName("contentRating")]
-    public ApiEnumCollection.ContentRating ContentRating { get; set; }
+    public string? ContentRating { get; set; }
 
     [JsonPropertyName("chapterNumbersResetOnNewVolume")]
     public bool ChapterNumbersResetOnNewVolume { get; set; }
 
     [JsonPropertyName("latestUploadedChapter")]
-    public Guid LatestUploadedChapter { get; set; }
+    public Guid? LatestUploadedChapter { get; set; }
     
     [JsonPropertyName("state")]
-    public ApiEnumCollection.State State { get; set; }
+    public string? State { get; set; }
 
     [JsonPropertyName("version")]
     public int Version { get; set; }
@@ -72,5 +89,7 @@ public class MangaAttributes
 
     [JsonPropertyName("updatedAt")]
     public string UpdatedAt { get; set; } = string.Empty;
+    
+    
 
 }

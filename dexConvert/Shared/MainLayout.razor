@@ -1,17 +1,35 @@
-﻿@inherits LayoutComponentBase
+﻿@using MudBlazor
+@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu/>
-    </div>
+    <MudThemeProvider @bind-IsDarkMode="@_isDarkMode"/>
+    <MudDialogProvider/>
+    <MudSnackbarProvider/>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
+<MudLayout>
+    <MudGrid>
+        <MudItem xs="7"></MudItem>
+        <MudItem xs="5">
+            <LangSelector></LangSelector>
+        </MudItem>
+    </MudGrid>
+    <MudMainContent Class="my-5">
+        <MudContainer MaxWidth="MaxWidth.Large">
             @Body
-        </article>
-    </main>
-</div>
+        </MudContainer>
+    </MudMainContent>
+    <MudAppBar Bottom="true" Color="Color.Dark" Elevation="0">
+        <MudText>
+            Results and Content powered by <MudLink Href="https://mangadex.org">MangaDex</MudLink> API
+        </MudText>
+        <MudSpacer></MudSpacer>
+        <MudLink Href="https://github.com/BelowH">
+            <MudIcon Icon="@Icons.Custom.Brands.GitHub"></MudIcon>
+        </MudLink>
+    </MudAppBar>
+</MudLayout>
+
+@code
+{
+    private bool _isDarkMode = true;
+    
+}

@@ -1,0 +1,36 @@
+﻿@using dexConvert.Services
+@using MudBlazor
+@using System.Globalization
+@inject IPreferenceService PreferenceService
+
+<MudContainer MaxWidth="MaxWidth.Small"  Class="d-flex object-right-top">
+    <MudSelect  T="CultureInfo" Lable="Language" Variant="Variant.Outlined" ValueChanged="SetLanguage" >
+        @foreach(var culture in _cultures)
+        {
+            <MudSelectItem Value="@culture"  >
+                <MudImage Src=@("https://unpkg.com/language-icons/icons/"+culture.TwoLetterISOLanguageName+".svg") Height="14" Class="mr-1 rounded-lg"></MudImage>
+                 @culture.DisplayName
+            </MudSelectItem>
+        }
+    </MudSelect>
+</MudContainer>
+
+
+@code {
+    
+    private List<CultureInfo> _cultures = new List<CultureInfo>();
+    
+    private CultureInfo _selectedCulture = CultureInfo.CurrentCulture;
+
+    protected override void OnInitialized()
+    {
+        _cultures = PreferenceService.GetAvailableLanguages();
+    }
+    
+    private void SetLanguage(CultureInfo culture)
+    {
+        _selectedCulture = culture;
+        PreferenceService.SetCulturePreference(culture);
+    }
+    
+}

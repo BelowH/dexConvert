@@ -9,6 +9,8 @@
     <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
     <link href="css/app.css" rel="stylesheet" />
     <link href="dexConvert.styles.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
 </head>
 
 <body>
@@ -20,6 +22,33 @@
         <a class="dismiss">🗙</a>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script >
+        async function downloadFileFromStream(fileName, contentStreamReference) {
+            const arrayBuffer = await contentStreamReference.arrayBuffer();
+            const blob = new Blob([arrayBuffer]);
+
+            const url = URL.createObjectURL(blob);
+
+            triggerFileDownload(fileName, url);
+
+            URL.revokeObjectURL(url);
+        }
+
+        function triggerFileDownload(fileName, url) {
+            const anchorElement = document.createElement("a");
+            anchorElement.href = url;
+
+            if (fileName) {
+                anchorElement.download = fileName;
+            }
+
+            anchorElement.click();
+            anchorElement.remove();
+        }
+        
+    </script>
 </body>
+
 
 </html>

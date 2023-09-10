@@ -9,11 +9,17 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.6" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.6" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
         <PackageReference Include="MudBlazor" Version="6.2.3" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Domains\Request" />
+      <Content Update="wwwroot\logo_cut.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Update="wwwroot\logo.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>
