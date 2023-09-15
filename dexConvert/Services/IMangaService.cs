@@ -9,7 +9,7 @@ public interface IMangaService
     
     public Manga? GetFromCache(Guid id);
 
-    public Task<List<Chapter>> GetChapters(Guid mangaId, string lang, bool deepSearch = false);
+    public Task<List<Chapter>> GetChapters(Guid mangaId, List<string> langs, bool deepSearch = false);
 
     public Guid AddSelection(Selection selection);
 

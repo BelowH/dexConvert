@@ -10,17 +10,28 @@ public class LocalizedString
     public IDictionary<string, JsonElement>? Values { get; set; }
 
 
-    public string GetLocalizedTitle(CultureInfo cultureInfo)
+    public string GetLocalizedTitle(List<string> langs)
     {
         if (Values == null)
         {
             return string.Empty;
         }
-        
-        if (Values.TryGetValue(cultureInfo.TwoLetterISOLanguageName,out JsonElement jsonElement))
+
+        try
         {
-            return jsonElement.GetString() ?? string.Empty;
+            foreach (string lang in langs)
+            {
+                if (Values.TryGetValue(lang,out JsonElement jsonElement))
+                {
+                    return jsonElement.GetString() ?? string.Empty;
+                }
+            }
+            return Values.First().Value.GetString() ?? string.Empty;
         }
-        return Values.First().Value.GetString() ?? string.Empty;
+        catch (Exception e)
+        {
+            // ignore
+            return "";
+        }
     }
 }

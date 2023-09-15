@@ -4,12 +4,12 @@
 @inject IPreferenceService PreferenceService
 
 <MudContainer MaxWidth="MaxWidth.Small"  Class="d-flex object-right-top">
-    <MudSelect  T="CultureInfo" Lable="Language" Variant="Variant.Outlined" ValueChanged="SetLanguage" >
-        @foreach(var culture in _cultures)
+    <MudSelect T="string" Lable="Language" Variant="Variant.Outlined" Label="Language" ValueChanged="SetLanguage" >
+        @foreach(KeyValuePair<string, string> culture in _availableLangs)
         {
-            <MudSelectItem Value="@culture"  >
-                <MudImage Src=@("https://unpkg.com/language-icons/icons/"+culture.TwoLetterISOLanguageName+".svg") Height="14" Class="mr-1 rounded-lg"></MudImage>
-                 @culture.DisplayName
+            <MudSelectItem Value="@culture.Key"  >
+                <MudImage Src=@("https://flagcdn.com/w20/"+culture.Key+".png") Height="14" Class="mr-1 rounded-lg"></MudImage>
+                 @culture.Value
             </MudSelectItem>
         }
     </MudSelect>
@@ -18,19 +18,18 @@
 
 @code {
     
-    private List<CultureInfo> _cultures = new List<CultureInfo>();
-    
-    private CultureInfo _selectedCulture = CultureInfo.CurrentCulture;
+    private Dictionary<string, string> _availableLangs = new Dictionary<string, string>();
 
+    private string _defaultLang = "gb";
+    
     protected override void OnInitialized()
     {
-        _cultures = PreferenceService.GetAvailableLanguages();
+        _availableLangs = PreferenceService.GetAvailableLanguages();
     }
     
-    private void SetLanguage(CultureInfo culture)
+    private void SetLanguage(string lang)
     {
-        _selectedCulture = culture;
-        PreferenceService.SetCulturePreference(culture);
+        PreferenceService.SetCulturePreference(lang);
     }
     
 }

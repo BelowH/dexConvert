@@ -5,13 +5,13 @@ namespace dexConvert.Services;
 public interface IPreferenceService
 {
     
-    public EventHandler<CultureInfo> OnPreferenceChanged { get; set; }
-
-    public CultureInfo GetCulturePreference();
+    public EventHandler<string> OnPreferenceChanged { get; set; }
     
-    public List<CultureInfo> GetAvailableLanguages();
+    public Dictionary<string, string> GetAvailableLanguages();
 
-    public void SetCulturePreference(CultureInfo lang);
+    public void SetCulturePreference(string lang);
+
+    public List<string> GetLangPreferenceForSearch();
     
     public void SetDeepSearch(bool deepSearch);
     

@@ -9,7 +9,6 @@
 <MudGrid>
     <MudItem xs="12"  Class="d-flex justify-center">
         <PageTitle>Dex Convert</PageTitle>
-        <MudImage Src="logo.png" Class="ma-4" Width="@_imageSize" Height="@_imageSize"></MudImage>
     </MudItem>
     <MudItem xs="12">
         <MudStack Row="true" Class="pa-2">
@@ -40,17 +39,18 @@
                 <MudGrid Class="mb-16">
                     @foreach (Manga manga in _searchResults)
                     {
-                        <MudItem xs="4">
-                            <MudPaper>
+                        <MudItem xs="12" Class="ma-2">
+                            <MudPaper Elevation="3">
                                 <MudGrid>
-                                    <MudItem xs="12">
-                                        <MudImage Src="@manga.CoverLink"></MudImage>
+                                    <MudItem xs="3">
+                                        <MudImage Src="@manga.CoverLink" Height="256" Width="256"></MudImage>
                                     </MudItem>
-                                    <MudItem xs="12">
-                                        <MudText Typo="Typo.subtitle1">@manga.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetCulturePreference())</MudText>
-                                    </MudItem>
-                                    <MudItem xs="12">
-                                         <MudButton Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.DoubleArrow" Color="Color.Primary" OnClick="() => NavigateToManga(manga)">Convert</MudButton >
+                                    <MudItem xs="9">
+                                        <MudStack>
+                                            <MudText Typo="Typo.subtitle1">@manga.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())</MudText>
+                                            <MudSpacer></MudSpacer>
+                                            <MudButton Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.DoubleArrow" Color="Color.Primary" OnClick="() => NavigateToManga(manga)">Convert</MudButton >
+                                        </MudStack>
                                     </MudItem>
                                 </MudGrid>
                             </MudPaper>

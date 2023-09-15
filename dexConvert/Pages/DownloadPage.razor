@@ -17,7 +17,7 @@
             <MudGrid Class="pa-2">
                 <MudItem xs="12">
                     <MudText Typo="Typo.h4" Align="Align.Center">
-                        @_selectedManga.Attributes.Title.GetLocalizedTitle(PreferenceService.GetCulturePreference())
+                        @_selectedManga.Attributes.Title.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())
                     </MudText>
                 </MudItem>
             </MudGrid>
@@ -159,7 +159,7 @@
         {
             _cbzConversionProcessing = true;
             StateHasChanged();
-            string fileName = _selectedManga!.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetCulturePreference()) + ".cbz";
+            string fileName = _selectedManga!.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch()) + ".cbz";
             Stream cbz = await CbzWorker.ConvertToCbz(_downloadedVolumes, new CancellationToken());
             _cbzConversionProcessing = false;
             StateHasChanged();

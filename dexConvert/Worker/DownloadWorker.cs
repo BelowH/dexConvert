@@ -93,24 +93,60 @@ public class DownloadWorker : IDownloadWorker
             {
                 ChapterId = chapterId,
             };
-            if (chapterData.BaseUrl == null || chapterData.Chapter == null || chapterData.Chapter.Hash == null)
+            if (chapterData.BaseUrl == null || chapterData.Chapter?.Hash == null)
             {
                 throw new Exception("Error while loading ChapterData");
             }
 
-            Queue<Task<byte[]?>> pageDownloadTasks = new Queue<Task<byte[]?>>();
+            List<Task> downloadTasks = new List<Task>();
+            for (int i = 0; i < imageData.Count; i++)
+            {
+                int iterator = i;
+                downloadTasks.Add( Task.Run( async () =>
+                {
+                    byte[]? page = await _apiRepository.GetPage(chapterData.BaseUrl, chapterData.Chapter.Hash, imageData[iterator],cancellationToken);
+                    if (page == null)
+                    {
+                        EventHandler? pageNotFoundHandler = PageNotFound;
+                        pageNotFoundHandler?.Invoke(this, EventArgs.Empty);
+                        return;
+                    }
+                    downloadedChapter.Pages.Add(iterator, page);
+                }, cancellationToken));
+            }
 
+            Task downloadChapterTask = Task.WhenAll(downloadTasks);
+            try
+            {
+                await downloadChapterTask.WaitAsync(cancellationToken);
+            }
+            catch
+            {
+                // ignored
+            }
+
+            switch (downloadChapterTask.Status)
+            {
+                case TaskStatus.RanToCompletion:
+                    ChapterCompleted();
+                    break;
+                case TaskStatus.Faulted:
+                    throw new Exception("Download failed");
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            
+            return downloadedChapter;
+            /*
             foreach (string img in imageData)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    pageDownloadTasks.Clear();
                     return null;
                 }
                 byte[]? page = await _apiRepository.GetPage(chapterData.BaseUrl, chapterData.Chapter.Hash, img,cancellationToken);
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    pageDownloadTasks.Clear();
                     return null;
                 }
                 if (page == null)
@@ -126,6 +162,7 @@ public class DownloadWorker : IDownloadWorker
             }
             ChapterCompleted();
             return downloadedChapter;
+            */
         }
         catch (Exception e)
         {

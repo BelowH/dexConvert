@@ -4,31 +4,52 @@ namespace dexConvert.Services;
 
 public class PreferenceService : IPreferenceService
 {
+
+    private static Dictionary<string, string> _supportedLangs = new Dictionary<string, string>()
+    {
+        {"gb", "English" },
+        {"tw", "Simplified Chinese"},
+        {"es", "Spanish"},
+        {"jp", "Japanese"},
+        {"kr", "Korean"},
+        {"de", "German"}
+    };
+
+    private static Dictionary<string, List<string>> _alternatives = new Dictionary<string, List<string>>()
+    {
+        { "tw", new List<string>() { "zh-hk", "zh-ro", "zh" } },
+        { "es", new List<string>() { "es", "es-la" } },
+        { "jp", new List<string>() { "ja-ro", "ja", "jp" } },
+        { "kr", new List<string>() { "ko-ro", "ko" } },
+        { "gb", new List<string>() { "en" } },
+    };
+
     
-    private CultureInfo _preference = CultureInfo.CurrentCulture;
+    
+    
+    private string _preferenceKey = "gb";
     
     private bool _deepSearch = false;
 
-    public EventHandler<CultureInfo>? OnPreferenceChanged { get; set; }
+    public EventHandler<string>? OnPreferenceChanged { get; set; }
 
-    public CultureInfo GetCulturePreference()
+    public string GetPreferenceName() => _supportedLangs[_preferenceKey];
+
+    public Dictionary<string, string> GetAvailableLanguages() => _supportedLangs;
+
+    public void SetCulturePreference(string key)
     {
-        return _preference;
+        _preferenceKey = key;
+        OnPreferenceChanged?.Invoke(this, key);
     }
 
-    public List<CultureInfo> GetAvailableLanguages()
+    public List<string> GetLangPreferenceForSearch()
     {
-        List<CultureInfo> cultureList = CultureInfo.GetCultures(CultureTypes.AllCultures).ToList();
-        cultureList.Remove(CultureInfo.InvariantCulture);
-        return cultureList;
+        List<string> langs = new List<string>();
+        langs.AddRange(_alternatives[_preferenceKey]);
+        return langs;
     }
 
-    public void SetCulturePreference(CultureInfo lang)
-    {
-        _preference = lang;
-        OnPreferenceChanged?.Invoke(this, lang);
-    }
-    
     public void SetDeepSearch(bool deepSearch)
     {
         _deepSearch = deepSearch;

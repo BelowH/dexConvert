@@ -6,18 +6,17 @@
     <MudSnackbarProvider/>
 
 <MudLayout>
-    <MudGrid>
-        <MudItem xs="7"></MudItem>
-        <MudItem xs="5">
-            <LangSelector></LangSelector>
-        </MudItem>
-    </MudGrid>
-    <MudMainContent Class="my-5">
-        <MudContainer MaxWidth="MaxWidth.Large">
+    <MudAppBar>
+        <MudImage Src="logo_cut.png" Height="40" Width="40"></MudImage>
+        <MudSpacer></MudSpacer>
+        <LangSelector></LangSelector>
+    </MudAppBar>
+    <MudMainContent Class="my-5" Style="min-height: 100%; height: 100%">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mb-16">
             @Body
         </MudContainer>
     </MudMainContent>
-    <MudAppBar Bottom="true" Color="Color.Dark" Elevation="0">
+    <MudAppBar Bottom="true" Color="Color.Dark">
         <MudText>
             Results and Content powered by <MudLink Href="https://mangadex.org">MangaDex</MudLink> API
         </MudText>

@@ -27,7 +27,7 @@ public class MangaService : IMangaService
             string? coverFileName = manga.Relationships?.First( r => r.Type!.Equals("cover_art")).Attributes?.GetElementValue<string>("fileName") ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(coverFileName))
             {
-                manga.CoverLink = Constants.CoverBaseUrl + "/covers/" + manga.Id + "/" + coverFileName + ".256.jpg";
+                manga.CoverLink = Constants.CoverBaseUrl + "/covers/" + manga.Id + "/" + coverFileName + ".512.jpg";
             }
             _mangaCache.TryAdd(manga.Id, manga);
         }
@@ -39,7 +39,7 @@ public class MangaService : IMangaService
         return _mangaCache.TryGetValue(id, out Manga? cache) ? cache : null;
     }
     
-    public async Task<List<Chapter>> GetChapters(Guid mangaId, string lang, bool deepSearch = false)
+    public async Task<List<Chapter>> GetChapters(Guid mangaId, List<string> langs, bool deepSearch = false)
     {
         List<Chapter>? chapters = new List<Chapter>();
         int total = 1, offset = 0;
@@ -49,12 +49,8 @@ public class MangaService : IMangaService
             {
                 await Task.Delay(250);
             }
-            FeedResponse feedResponse = await _apiRepository.GetFeed(mangaId, lang, offset, deepSearch);
+            FeedResponse feedResponse = await _apiRepository.GetFeed(mangaId, langs, offset, deepSearch);
             total = feedResponse.Total;
-            if (deepSearch)
-            {
-                feedResponse.Data = feedResponse.Data?.Where( chapter => chapter.Attributes.TranslatedLanguage == lang).ToList();
-            }
             chapters.AddRange(feedResponse.Data ?? new List<Chapter>());
             offset += 100;
         }

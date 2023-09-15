@@ -1,5 +1,7 @@
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using dexConvert.Domains;
 using dexConvert.Domains.ApiModels;
@@ -43,14 +45,14 @@ public class ApiRepository : IApiRepository
         }
     }
 
-    public async Task<FeedResponse> GetFeed(Guid mangaId,string lang, int offset = 0, bool deepSearch = false)
+    public async Task<FeedResponse> GetFeed(Guid mangaId,List<string> langs, int offset = 0, bool deepSearch = false)
     {
         try
         {
             NameValueCollection query = System.Web.HttpUtility.ParseQueryString(string.Empty);
             if (!deepSearch)
             {
-                query.Add("translatedLanguage[]",lang); 
+                query.Add("translatedLanguage[]",string.Join(",", langs)); 
             }
             query.Add("offset",offset.ToString());
             HttpResponseMessage response = await _client.GetAsync(MangaEndpoint + "/" + mangaId + "/feed?" + query);
@@ -67,7 +69,6 @@ public class ApiRepository : IApiRepository
         }
     }
     
-
     public async Task<ChapterData> GetChapter(Guid chapterId, CancellationToken cancellationToken)
     {
         try
@@ -88,19 +89,74 @@ public class ApiRepository : IApiRepository
 
     public async Task<byte[]?> GetPage(string baseUrl, string hash, string page, CancellationToken cancellationToken)
     {
+        Stopwatch sw = new Stopwatch();
+        string endpoint = "/data/" + hash + "/" + page;
         try
         {
             using HttpClient pageClient = new HttpClient();
             pageClient.BaseAddress = new Uri(baseUrl);
-            byte[] image = await pageClient.GetByteArrayAsync("/data/" + hash + "/" + page, cancellationToken);
+            
+            sw.Start();
+            HttpResponseMessage imageResponse  = await pageClient.GetAsync("/data/" + hash + "/" + page, cancellationToken);
+            imageResponse.EnsureSuccessStatusCode();
+            byte[] image = await imageResponse.Content.ReadAsByteArrayAsync(cancellationToken);
+            sw.Stop();
+            imageResponse.Headers.TryGetValues("X-Cache", out  IEnumerable<string>? cacheHeaders); 
+            bool isCached  = cacheHeaders?.FirstOrDefault(s => s.Contains("HIT")) != null;
+            ReportDownload(baseUrl + endpoint, sw.ElapsedMilliseconds, true, isCached, image.Length, cancellationToken);
             return image;
         }
-        catch (Exception e)
+        catch (Exception)
         {
+            sw.Stop();
+            ReportDownload(baseUrl + endpoint, sw.ElapsedMilliseconds, false, false, 0,
+                cancellationToken);
+            
             return null;
         }
     }
 
+    private async void ReportDownload(string url ,long timeInMs, bool success, bool isCached, int size, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (url.Contains("mangadex.org", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return;
+            }
+            
+            Uri uri = new Uri(url);
+            PageReport pageReport = new PageReport()
+            {
+                Url = url,
+                Success = success,
+                Bytes = size,
+                Duration = timeInMs,
+                Cached = isCached
+            };
+            
+            using HttpClient reportClient = new HttpClient();
+            Uri reportUri = new Uri(Constants.ReportBaseUrl);
+            reportClient.BaseAddress = reportUri;
+            HttpContent content = new StringContent(JsonSerializer.Serialize(pageReport));
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            HttpResponseMessage response = await reportClient.PostAsync("/report", content, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            string responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            Console.WriteLine(responseBody);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error while reporting page download" + e);
+            //ignore
+        }
+    }
+    
+    
     public void Dispose()
     {
         _client.Dispose();
