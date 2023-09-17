@@ -1,13 +1,20 @@
 ﻿@using MudBlazor
+@using MudBlazor.Utilities
 @inherits LayoutComponentBase
+@inject NavigationManager NavigationManager;
 
-    <MudThemeProvider @bind-IsDarkMode="@_isDarkMode"/>
+    <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="@_customTheme"/>
     <MudDialogProvider/>
     <MudSnackbarProvider/>
 
 <MudLayout>
     <MudAppBar>
-        <MudImage Src="logo_cut.png" Height="40" Width="40"></MudImage>
+        <MudLink OnClick="NavigateHome" Underline="Underline.None">
+            <MudStack Row="true">
+                <MudImage Src="logo_cut.png" Height="40" Width="40"></MudImage>
+                <MudText Typo="Typo.h3" Color="Color.Secondary">DexConvert</MudText>
+            </MudStack>
+        </MudLink>
         <MudSpacer></MudSpacer>
         <LangSelector></LangSelector>
     </MudAppBar>
@@ -30,5 +37,21 @@
 @code
 {
     private bool _isDarkMode = true;
-    
+
+    readonly MudTheme _customTheme = new MudTheme()
+    {
+        Palette = new PaletteDark()
+        {
+            Primary = new MudColor("#AF69EF"),
+            Secondary = new MudColor("#00ffff")
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = new MudColor("#AF69EF"),
+            Secondary = new MudColor("#00ffff")
+        },
+    };
+
+    void NavigateHome() => NavigationManager.NavigateTo("/");
+
 }

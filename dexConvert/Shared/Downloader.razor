@@ -17,15 +17,18 @@
                 <MudItem xs="12">
                     @if (_volumeDownload)
                     {
-                        <MudStack Class="pa-2" Row="true">
-                            <MudText>Volume Progress:</MudText>
-                            <MudProgressLinear Value="_totalProgress" Class="px-2" Color="Color.Primary"></MudProgressLinear>
+                        <MudStack Class="pa-2">
+                            <MudText Typo="Typo.h6" Align="Align.Center">@_infoText</MudText>
+                            <MudProgressLinear Value="_totalProgress" Class="px-2" Color="Color.Primary" Rounded="true" Size="Size.Large"></MudProgressLinear>
                         </MudStack>
                     }
-                    <MudStack Class="pa-2" Row="true">
-                        <MudText>Chapter Progress:</MudText>
-                        <MudProgressLinear Value="_progress" Class="px-2" Color="Color.Primary"></MudProgressLinear>
-                    </MudStack>
+                    else
+                    {
+                        <MudStack Class="pa-2">
+                            <MudText Typo="Typo.h6" Align="Align.Center">@_infoText</MudText>
+                            <MudProgressLinear Indeterminate="true" Class="px-2" Color="Color.Primary" Rounded="true" Size="Size.Large"></MudProgressLinear>
+                        </MudStack>
+                    }
                 </MudItem>
             }
             else
@@ -36,46 +39,30 @@
                     </MudText>
                 </MudItem>
             }
-            <MudItem xs="6"  Class="d-flex align-center justify-center">
-                <MudButton  Icon="@Icons.Material.Filled.DownloadForOffline" OnClick="DownloadCbz" Variant="Variant.Filled" Color="Color.Primary" Disabled="_inputDisabled">
-                    @if (_cbzConversionProcessing)
-                    {
-                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
-                        <MudText Class="ms-2">Processing</MudText>
-                    }
-                    else
-                    {
-                        <MudText Class="ms-2">Download .cbz</MudText>
-                    }
-                </MudButton>
-            </MudItem>
-            <MudItem xs="6" Class="d-flex align-center justify-center">
-                <MudButton   Icon="@Icons.Material.Filled.DownloadForOffline" OnClick="DownloadPdf" Variant="Variant.Filled" Color="Color.Primary" Disabled="_inputDisabled">
-                    @if (_pdfConversionProcessing)
-                    {
-                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
-                        <MudText Class="ms-2">Processing</MudText>
-                    }
-                    else
-                    {
-                        <MudText Class="ms-2">Download .pdf</MudText>
-                    }
-                </MudButton>
-            </MudItem>
+            
             @if(_missingPages > 0)
             {
-                <MudItem xs="12">
+                <MudItem xs="12" Class="ma-4">
                     <MudAlert  Class="d-flex align-center justify-center" Severity="Severity.Warning"> dexConvert was not able to fetch @_missingPages Page(s), the chapter may be incomplete.</MudAlert>
                 </MudItem>
             }
-            <MudItem xs="12" Class="d-flex align-center justify-center">
-                <MudButton OnClick="Abort" Variant="Variant.Filled" >Cancel Download</MudButton>
-            </MudItem>
+            @if (_downloading)
+            {
+                <MudItem xs="12" Class="d-flex align-center justify-center">
+                    <MudButton OnClick="Abort" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Cancel">Cancel Download</MudButton>
+                </MudItem>
+            }
+            else
+            {
+                <MudItem xs="12" Class="d-flex align-center justify-center">
+                    <MudButton OnClick="Complete" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.DownloadDone" Color="Color.Primary">Done</MudButton>
+                </MudItem>
+            }
         </MudGrid>
     }
     else
     {
-        <MudAlert Severity="Severity.Error"> An error occurred while downloading or converting this chapter, if you think this is a bug please consider reporting it! </MudAlert>
+        <MudAlert Class="ma-4" Severity="Severity.Error"> An error occurred while downloading or converting this chapter, if you think this is a bug please consider reporting it! </MudAlert>
     }
 
 </MudPaper>
@@ -114,6 +101,8 @@
     private bool _pdfConversionProcessing = false;
     
     private int _missingPages = 0;
+
+    private string _infoText = "Download Progress";
     
     private DownloadedChapter? _downloadedChapter;
 
@@ -122,7 +111,7 @@
     private CancellationTokenSource  _cancellationToken = new CancellationTokenSource();
     
     
-    public async void Activate(IDownloadWorker downloadWorker,Guid chapterId, string mangaName, string chapterName)
+    public async void Activate(IDownloadWorker downloadWorker,Guid chapterId, string mangaName, string chapterName, EnumCollection.DownloadType downloadType)
     {
         try
         {
@@ -142,13 +131,25 @@
                 _missingPages++;
                 StateHasChanged();
             };
-            downloadWorker.OnChapterCompleted += (_, _) =>
+            downloadWorker.OnChapterCompleted += async (_, _) =>
             {
+                switch (downloadType)
+                {
+                    case EnumCollection.DownloadType.CBZ:
+                        await DownloadCbz();
+                        break;
+                    case EnumCollection.DownloadType.PDF:
+                        await DownloadPdf();
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(downloadType), downloadType, null);
+                }
                 _downloading = false;
                 _inputDisabled = false;
                 StateHasChanged();
             };
             _downloadedChapter = await downloadWorker.DownloadChapter(_chapterId,_cancellationToken.Token ,false);
+            
         }
         catch (Exception e)
         {
@@ -157,7 +158,7 @@
         }
     }
     
-    public async void Activate(IDownloadWorker downloadWorker,List<Guid> chapterIds, string mangaName, string volumeName)
+    public async Task Activate(IDownloadWorker downloadWorker,List<Guid> chapterIds, string mangaName, string volumeName, EnumCollection.DownloadType downloadType)
     {
         try
         {
@@ -168,8 +169,19 @@
             _missingPages = 0;
             _errorMessage = string.Empty;
             _volumeDownload = true;
-            downloadWorker.OnTotalCompleted += (_, _) =>
+            downloadWorker.OnTotalCompleted += async (_, _) =>
             {
+                switch (downloadType)
+                {
+                    case EnumCollection.DownloadType.CBZ:
+                        await DownloadCbz();
+                        break;
+                    case EnumCollection.DownloadType.PDF:
+                        await DownloadPdf();
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(downloadType), downloadType, null);
+                }
                 _downloading = false;
                 _inputDisabled = false;
                 StateHasChanged();
@@ -198,26 +210,52 @@
             StateHasChanged();
         }
     }
-    
 
-    
-    private void DownloadPdf()
+
+    private async Task DownloadPdf()
     {
-        _pdfConversionProcessing = true;
-        _inputDisabled = true;
-        StateHasChanged();
-        _inputDisabled = false;
-        _pdfConversionProcessing = false;
-        StateHasChanged();
+        try
+        {
+            _pdfConversionProcessing = true;
+            _inputDisabled = true;
+            _infoText = "Converting to .pdf";
+            StateHasChanged();
+            await Task.Delay(50);
+            string fileName;
+            Stream pdf;
+            if (_volumeDownload)
+            {
+                fileName = $"{_mangaName}_V_{_identifier}.pdf";
+                pdf = new MemoryStream(PdfService.ConvertToPdf(_downloadedChapters!));
+            }
+            else
+            {
+                fileName = $"{_mangaName}_Ch_{_identifier}.pdf";
+                pdf = new MemoryStream( PdfService.ConvertToPdf(_downloadedChapter!));
+            }
+            using DotNetStreamReference streamRef = new DotNetStreamReference(pdf);
+            await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+            _cbzConversionProcessing = false;
+            _inputDisabled = false;
+            StateHasChanged();
+            await pdf.DisposeAsync();
+        }
+        catch
+            (Exception e)
+        {
+            Console.WriteLine(e);
+            _errorMessage = e.Message;
+            StateHasChanged();
+        }
     }
 
-    private async void DownloadCbz()
+    private async Task DownloadCbz()
     {
         try
         {
             _cbzConversionProcessing = true;
             _inputDisabled = true;
-            
+            _infoText = "Converting to .cbz";
             StateHasChanged();
             await Task.Delay(50);
             string fileName;
@@ -225,20 +263,20 @@
             if (_volumeDownload)
             {
                 fileName = $"{_mangaName}_V_{_identifier}.cbz";
-                cbz = await CbzWorker.ConvertToCbz(_downloadedChapters!, _cancellationToken.Token);
+                cbz = await CbzService.ConvertToCbz(_downloadedChapters!, _cancellationToken.Token);
             }
             else
             {
                 
                 fileName = $"{_mangaName}_Ch_{_identifier}.cbz";
-                cbz = await CbzWorker.ConvertToCbz(_downloadedChapter!, _cancellationToken.Token);
+                cbz = await CbzService.ConvertToCbz(_downloadedChapter!, _cancellationToken.Token);
             }
             using DotNetStreamReference streamRef = new DotNetStreamReference(cbz);
             await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
             _cbzConversionProcessing = false;
             _inputDisabled = false;
             StateHasChanged();
-            OnComplete?.Invoke();
+            
         }
         catch (Exception e)
         {
@@ -246,6 +284,8 @@
             StateHasChanged();
         }
     }
+    
+    private void Complete() => OnComplete?.Invoke();
     
     private void Abort()
     {

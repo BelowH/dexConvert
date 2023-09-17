@@ -24,7 +24,7 @@ public class MangaService : IMangaService
         MangaSearchResponse searchResult = await _apiRepository.GetManga(title, offset);
         foreach (Manga manga in searchResult.Data)
         {
-            string? coverFileName = manga.Relationships?.First( r => r.Type!.Equals("cover_art")).Attributes?.GetElementValue<string>("fileName") ?? string.Empty;
+            string? coverFileName = manga.Relationships?.FirstOrDefault( r => r.Type!.Equals("cover_art"))?.Attributes?.GetElementValue<string>("fileName") ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(coverFileName))
             {
                 manga.CoverLink = Constants.CoverBaseUrl + "/covers/" + manga.Id + "/" + coverFileName + ".512.jpg";

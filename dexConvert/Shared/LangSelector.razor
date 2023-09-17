@@ -4,12 +4,12 @@
 @inject IPreferenceService PreferenceService
 
 <MudContainer MaxWidth="MaxWidth.Small"  Class="d-flex object-right-top">
-    <MudSelect T="string" Lable="Language" Variant="Variant.Outlined" Label="Language" ValueChanged="SetLanguage" >
-        @foreach(KeyValuePair<string, string> culture in _availableLangs)
+    <MudSelect T="string" Lable="Language" Variant="Variant.Outlined" Label="Language" ValueChanged="SetLanguage">
+        @foreach (KeyValuePair<string, string> culture in _availableLangs)
         {
-            <MudSelectItem Value="@culture.Key"  >
-                <MudImage Src=@("https://flagcdn.com/w20/"+culture.Key+".png") Height="14" Class="mr-1 rounded-lg"></MudImage>
-                 @culture.Value
+            <MudSelectItem Value="@culture.Key">
+                <MudImage Src=@("https://flagcdn.com/w20/" + culture.Key + ".png") Height="14" Class="mr-1 rounded-lg"></MudImage>
+                @culture.Value
             </MudSelectItem>
         }
     </MudSelect>

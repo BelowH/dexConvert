@@ -40,17 +40,14 @@
                     @foreach (Manga manga in _searchResults)
                     {
                         <MudItem xs="12" Class="ma-2">
-                            <MudPaper Elevation="3">
+                            <MudPaper Elevation="3" Style="height: 256px; display: flex; justify-content: left; align-items: flex-end">
                                 <MudGrid>
                                     <MudItem xs="3">
-                                        <MudImage Src="@manga.CoverLink" Height="256" Width="256"></MudImage>
+                                        <MudImage Src="@manga.CoverLink" Height="256"></MudImage>
                                     </MudItem>
                                     <MudItem xs="9">
-                                        <MudStack>
-                                            <MudText Typo="Typo.subtitle1">@manga.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())</MudText>
-                                            <MudSpacer></MudSpacer>
-                                            <MudButton Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.DoubleArrow" Color="Color.Primary" OnClick="() => NavigateToManga(manga)">Convert</MudButton >
-                                        </MudStack>
+                                        <MudText Typo="Typo.subtitle1">@manga.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())</MudText>
+                                        <MudButton  Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.DoubleArrow" Color="Color.Primary" OnClick="() => NavigateToManga(manga)">Convert</MudButton >
                                     </MudItem>
                                 </MudGrid>
                             </MudPaper>
@@ -95,8 +92,6 @@
     private string _searchText = "";
 
     private int _offset = 0;
-
-    private int _imageSize = 500;
     
     private bool DeepSearch 
     {
@@ -134,7 +129,6 @@
             {
                 _loadingMore = true;
             }
-            _imageSize = 150;
             _loading = false;
             StateHasChanged();
         } 
