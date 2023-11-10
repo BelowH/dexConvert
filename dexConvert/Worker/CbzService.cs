@@ -1,6 +1,7 @@
 ﻿using System.IO.Compression;
 using dexConvert.Domains;
 using MudBlazor;
+using Org.BouncyCastle.Utilities;
 
 namespace dexConvert.Worker;
 
@@ -13,16 +14,24 @@ public static class CbzService
         {
             for (int i = 0; i < chapters.Count; i++)
             {
-                for (int j = 0; j < chapters[i].Pages.Count; j++)
+                if (chapters[i].Pages  == null)
+                {
+                    continue;
+                }
+                for (int j = 0; j < chapters[i].Pages!.Count; j++)
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
                         zipArchive.Dispose();
                         return Stream.Null;
                     }
+                    if (!chapters[i].Pages!.TryGetValue(j, out byte[]? page) || page == Arrays.EmptyBytes)
+                    {
+                        continue;
+                    }
                     ZipArchiveEntry zipArchiveEntry = zipArchive.CreateEntry($"{i}/{j}.png");
                     await using Stream stream = zipArchiveEntry.Open();
-                    await stream.WriteAsync( chapters[i].Pages[j],cancellationToken);
+                    await stream.WriteAsync( chapters[i].Pages![j],cancellationToken);
                 }
             }
         }
@@ -36,12 +45,20 @@ public static class CbzService
         MemoryStream memoryStream = new MemoryStream();
         using (ZipArchive zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
         {
+            if (chapter.Pages  == null)
+            {
+                throw new Exception("No Pages in Chapter");
+            }
             for (int i = 0; i < chapter.Pages.Count; i++)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
                     zipArchive.Dispose();
                     return Stream.Null;
+                }
+                if (! chapter.Pages.TryGetValue(i, out byte[]? page) || page == Arrays.EmptyBytes)
+                {
+                    continue;
                 }
                 ZipArchiveEntry zipArchiveEntry = zipArchive.CreateEntry($"{i}.png");
                 await using Stream stream = zipArchiveEntry.Open();

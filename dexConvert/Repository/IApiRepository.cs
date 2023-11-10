@@ -11,5 +11,7 @@ public interface IApiRepository : IDisposable
     public Task<ChapterData> GetChapter(Guid chapterId, CancellationToken cancellationToken);
     
     public Task<byte[]?> GetPage(string baseUrl, string hash, string page, CancellationToken cancellationToken);
+    
+    public Task<ScanlationGroupCollectionResponse> GetScanlationGroups(List<string> ids, int offset = 0, int limit = 100);
 
 }

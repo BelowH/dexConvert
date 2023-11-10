@@ -2,6 +2,7 @@
 using dexConvert.Domains;
 using dexConvert.Domains.ApiModels;
 using dexConvert.Repository;
+using MudBlazor.Utilities;
 
 namespace dexConvert.Services;
 
@@ -39,7 +40,7 @@ public class MangaService : IMangaService
         return _mangaCache.TryGetValue(id, out Manga? cache) ? cache : null;
     }
     
-    public async Task<List<Chapter>> GetChapters(Guid mangaId, List<string> langs, bool deepSearch = false)
+    public async Task<FeedResponse> GetChapters(Guid mangaId, List<string> langs, bool deepSearch = false)
     {
         List<Chapter>? chapters = new List<Chapter>();
         int total = 1, offset = 0;
@@ -54,7 +55,15 @@ public class MangaService : IMangaService
             chapters.AddRange(feedResponse.Data ?? new List<Chapter>());
             offset += 100;
         }
-        return chapters;
+        chapters = FilterChapters(chapters, out int numFiltered, out int duplicateCount);
+        FeedResponse result = new FeedResponse
+        {
+            Data = chapters,
+            Total = chapters.Count,
+            Filtered = numFiltered,
+            Duplicate = duplicateCount
+        };
+        return result;
     }
     
     public Guid AddSelection( Selection selection)
@@ -68,6 +77,33 @@ public class MangaService : IMangaService
     {
         return _selectionCache.TryGetValue(id, out Selection? selection) ? selection : null;
     }
-    
+
+    private List<Chapter> FilterChapters(List<Chapter> chapters, out int numFiltered, out int duplicateCount)
+    {
+        numFiltered = 0;
+        duplicateCount = 0;
+        Dictionary<string,Chapter> filteredChapters = new Dictionary<string, Chapter>();
+        foreach (Chapter chapter in chapters)
+        {
+            if (chapter.Attributes == null || chapter.Attributes.Pages == 0 || !string.IsNullOrWhiteSpace(chapter.Attributes.ExternalUrl))
+            {
+                numFiltered++;
+                continue;
+            }
+            string? id = chapter.Attributes?.Chapter;
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                id = Guid.NewGuid().ToString();
+            }
+            if (filteredChapters.ContainsKey(id))
+            {
+                id = Guid.NewGuid().ToString();
+                duplicateCount++;
+            }
+            filteredChapters.Add(id,chapter);
+           
+        }
+        return filteredChapters.Values.ToList();
+    }
     
 } 

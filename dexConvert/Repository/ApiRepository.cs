@@ -116,6 +116,30 @@ public class ApiRepository : IApiRepository
         }
     }
 
+    public async Task<ScanlationGroupCollectionResponse> GetScanlationGroups(List<string> ids, int offset = 0, int limit = 100)
+    {
+        try
+        {
+            
+            NameValueCollection query = System.Web.HttpUtility.ParseQueryString(string.Empty);
+            query.Add("limit",limit.ToString());
+            query.Add("offset",offset.ToString());
+            foreach (string id in ids)
+            {
+                query.Add("ids[]",id);
+            }
+            HttpResponseMessage response = await _client.GetAsync("/group?" + query);
+            response.EnsureSuccessStatusCode();
+            string responseContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<ScanlationGroupCollectionResponse>(responseContent)!;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
     private async void ReportDownload(string url ,long timeInMs, bool success, bool isCached, int size, CancellationToken cancellationToken)
     {
         try

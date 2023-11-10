@@ -11,5 +11,11 @@ public class FeedResponse : ApiResponse
     public string? Response { get; set; }
     
     [JsonPropertyName("data")]
-    public IList<Chapter>? Data { get; set; }
+    public List<Chapter>? Data { get; set; }
+
+    [JsonIgnore]
+    public int Filtered { get; set; } = 0;
+    
+    [JsonIgnore]
+    public int Duplicate { get; set; } = 0;
 }

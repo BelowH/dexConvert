@@ -11,7 +11,10 @@ public class Chapter
     public string Type { get; set; }
 
     [JsonPropertyName("attributes")]
-    public ChapterAttributes Attributes { get; set; }
+    public ChapterAttributes? Attributes { get; set; }
+    
+    [JsonPropertyName("relationships")]
+    public List<ChapterRelationship> Relationships { get; set; } = new List<ChapterRelationship>();
 }
 
 public class ChapterAttributes
@@ -32,7 +35,7 @@ public class ChapterAttributes
     public Guid Uploader { get; set; }
 
     [JsonPropertyName("externalUrl")]
-    public string ExternalUrl { get; set; }
+    public string? ExternalUrl { get; set; }
 
     [JsonPropertyName("version")]
     public int Version { get; set; }
@@ -49,4 +52,16 @@ public class ChapterAttributes
     [JsonPropertyName("readableAt")]
     public string? ReadableAt { get; set; }
     
+    [JsonPropertyName("pages")]
+    public int Pages { get; set; }
+    
+}
+
+public class ChapterRelationship
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; }
+    
+    [JsonPropertyName("type")]
+    public string Type { get; set; }
 }

@@ -11,6 +11,7 @@
 @inject NavigationManager NavigationManager
 @inject IPreferenceService PreferenceService
 @inject IDownloadWorker DownloadWorker
+@inject IMangaMetadataService MangaMetadataService
 
 
 <style>
@@ -20,7 +21,7 @@
 
 </style>
 <MudOverlay @bind-Visible="_popupOpen" DarkBackground="true" AutoClose="false">
-    <Downloader OnComplete="@DownloaderFinished" OnAbort="@DownloaderFinished" @ref="downloader"></Downloader>
+    <Downloader OnComplete="@DownloaderFinished" OnAbort="@DownloaderFinished" @ref="_downloader"></Downloader>
 </MudOverlay>
 @if (_loading)
 {
@@ -34,12 +35,15 @@ else
 {
     <MudGrid Class="mb-16">
         <MudItem xs="12">
-            @if(_manga is not null)
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="NavigateToIndex">Return to Search</MudButton>
+        </MudItem>
+        <MudItem xs="12">
+            @if (_manga is not null)
             {
                 <MudGrid Class="pa-2">
                     <MudItem xs="3">
-                        <MudImage Src="@_manga.CoverLink" Height="256">
-                            
+                        <MudImage Src="@_manga.CoverLink" Class="rounded-lg" Height="400">
+
                         </MudImage>
                     </MudItem>
                     <MudItem xs="9">
@@ -50,6 +54,22 @@ else
                             @_manga.Attributes?.Description?.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())
                         </MudText>
                     </MudItem>
+                    @if (_filteredCount > 0)
+                    {
+                        <MudItem xs="12">
+                            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Elevation="10" Class="pa-4 ma-4">
+                                Attention! @_filteredCount chapters where filtered either because they had no pages or are not available for download.
+                            </MudAlert>
+                        </MudItem>
+                    }
+                    @if (_duplicateCount > 0)
+                    {
+                        <MudItem xs="12">
+                            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Elevation="10" Class="pa-4  ma-4">
+                                Attention! Some chapters are duplicate please be careful when downloading a whole volume.
+                            </MudAlert>
+                        </MudItem>
+                    }
                 </MudGrid>
             }
             else
@@ -62,10 +82,10 @@ else
         <MudItem xs="12">
             @if (_loadedChapters is {Count: > 0 })
             {
-                <MudTable Hover="true" 
+                <MudTable Hover="true"
                           Breakpoint="Breakpoint.Sm"
                           FixedHeader="true"
-                          Items="_loadedChapters" 
+                          Items="_loadedChapters"
                           GroupBy="_groupDefinition"
                           MultiSelection="false">
                     <GroupHeaderTemplate>
@@ -75,21 +95,30 @@ else
                         <MudTh Class="mud-table-cell-custom-group" colspan="2"></MudTh>
                         <MudTh Class="mud-table-cell-custom-group" colspan="1">
                             <MudStack Row="true">
-                                 <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.MenuBook" OnClick="() => DownloadVolume(context.Key.ToString(), DownloadType.CBZ)">Download .cbz</MudButton>
-                                 <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PictureAsPdf" OnClick="() => DownloadVolume(context.Key.ToString(), DownloadType.PDF)">Download .pdf</MudButton>
+                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.MenuBook" OnClick="() => DownloadVolume(context.Key.ToString(), DownloadType.CBZ)">Download .cbz</MudButton>
+                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PictureAsPdf" OnClick="() => DownloadVolume(context.Key.ToString(), DownloadType.PDF)">Download .pdf</MudButton>
                             </MudStack>
                         </MudTh>
                     </GroupHeaderTemplate>
                     <RowTemplate>
-                        <MudTd>Chapter @(context.Attributes.Chapter ?? "Unknown")</MudTd>
-                        <MudTd>@(context.Attributes.Title ?? "Unknown")</MudTd>
-                        <MudTd>@(context.Attributes.TranslatedLanguage ?? "Unknown")</MudTd>
+                        <MudTd>Chapter @(context.Attributes?.Chapter ?? "Unknown")</MudTd>
+                        <MudTd>@(context.Attributes?.Title ?? "Unknown")</MudTd>
+                        <MudTd>
+                            @{
+                                string scanlationGroupId = context.Relationships?.FirstOrDefault(r => r.Type.Equals("scanlation_group"))?.Id ?? "";
+                                ScanlationGroupResponse? scanlationGroupResponse = _scanlationGroups.FirstOrDefault(s => s.Id.Equals(scanlationGroupId));
+                            }
+                            <MudStack Row="true">
+                                <MudIcon Size="Size.Small" Icon="@Icons.Material.Filled.Groups"></MudIcon>
+                                <MudLink Href="@($"https://mangadex.org/group/{scanlationGroupId}")">@(scanlationGroupResponse != null ? scanlationGroupResponse.Attributes?.Name : "Unknown")</MudLink>
+                            </MudStack>
+                        </MudTd>
                         <MudTd>
                             <MudStack Row="true">
-                                <MudButton Variant="Variant.Filled" Color="Color.Secondary"  StartIcon="@Icons.Material.Filled.MenuBook" OnClick="() => DownloadChapter(context.Id, context.Attributes.Chapter!, DownloadType.CBZ)">Download .cbz</MudButton>    
-                                <MudButton Variant="Variant.Filled" Color="Color.Secondary"  StartIcon="@Icons.Material.Filled.PictureAsPdf" OnClick="() => DownloadChapter(context.Id, context.Attributes.Chapter!, DownloadType.PDF)">Download .pdf</MudButton>    
+                                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.MenuBook" OnClick="() => DownloadChapter(context.Id, context.Attributes?.Chapter!, DownloadType.CBZ)">Download .cbz</MudButton>
+                                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.PictureAsPdf" OnClick="() => DownloadChapter(context.Id, context.Attributes?.Chapter!, DownloadType.PDF)">Download .pdf</MudButton>
                             </MudStack>
-                            
+
                         </MudTd>
                     </RowTemplate>
                 </MudTable>
@@ -113,13 +142,17 @@ else
     
     private bool _loading = true;
     
-    private bool _popupOpen = false;
+    private bool _popupOpen;
+    
+    private int _filteredCount;
+    
+    private int _duplicateCount;
     
     private List<Chapter> _loadedChapters = new List<Chapter>();
     
-    private Downloader downloader;
-    
-    private Guid _selectedChapterId = Guid.Empty;
+    private List<ScanlationGroupResponse> _scanlationGroups = new List<ScanlationGroupResponse>();
+
+    private Downloader? _downloader;
     
     private readonly TableGroupDefinition<Chapter> _groupDefinition = new TableGroupDefinition<Chapter>
     {
@@ -127,54 +160,49 @@ else
         Indentation = true,
         Expandable = true,
         IsInitiallyExpanded = false,
-        Selector = (c) => c.Attributes.Volume ?? "Unknown"
+        Selector = (c) => c.Attributes?.Volume ?? "Unknown"
     };
 
     protected override async Task OnInitializedAsync()
     {
-        PreferenceService.OnPreferenceChanged += OnLangChanged;
         _manga = MangaService.GetFromCache(Guid.Parse(Id!));
-        _loadedChapters = await MangaService.GetChapters(Guid.Parse(Id!), PreferenceService.GetLangPreferenceForSearch(), PreferenceService.GetDeepSearch());
-        _loadedChapters = _loadedChapters
-            .OrderBy(o => o.Attributes.Chapter?.Length ?? int.MaxValue)
-            .ThenBy(o => o.Attributes.Chapter ?? "Unknown")
-            .ToList();
+        FeedResponse feed = await MangaService.GetChapters(Guid.Parse(Id!), PreferenceService.GetLangPreferenceForSearch(), PreferenceService.GetDeepSearch());
+        _loadedChapters = feed.Data?
+            .OrderBy(o => o.Attributes?.Chapter?.Length ?? int.MaxValue)
+            .ThenBy(o => o.Attributes?.Chapter ?? "Unknown")
+            .ToList() ?? new List<Chapter>();
+        _filteredCount = feed.Filtered;
+        _duplicateCount = feed.Duplicate;
+        _scanlationGroups = await MangaMetadataService.GetScanlationGroupsForFeed(feed);
         _loading = false;
     }
 
-    private async void OnLangChanged(object? sender, string e)
-    {
-        _loading = true;
-        StateHasChanged();
-        _loadedChapters = await MangaService.GetChapters(Guid.Parse(Id!), PreferenceService.GetLangPreferenceForSearch());
-        _loadedChapters = _loadedChapters
-            .OrderBy(o => o.Attributes.Chapter?.Length ?? int.MaxValue)
-            .ThenBy(o => o.Attributes.Chapter ?? "Unknown")
-            .ToList();
-        _loading = false;
-        StateHasChanged();
-    }
+
     
     private async void DownloadChapter(Guid chapterId, string chapterNumber, DownloadType downloadType)
     {
         _popupOpen = true;
         await Task.Delay(100);
-        downloader.Activate(DownloadWorker,chapterId,_manga!.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch()), chapterNumber, downloadType);
+        _downloader?.ShowForChapterDownload(chapterId,_manga!.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch()), chapterNumber, downloadType);
     }
     
     private async void DownloadVolume(string? volumeNumber, DownloadType downloadType)
     {
         _popupOpen = true;
         await Task.Delay(100);
-        List<Guid> chapters = _loadedChapters.Where(c => c.Attributes.Volume == volumeNumber).Select( c => c.Id).ToList();
-        downloader.Activate(DownloadWorker, chapters, _manga!.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch()), volumeNumber!, downloadType);
-        
+        List<Guid> chapters = _loadedChapters.Where(c => c.Attributes?.Volume == volumeNumber).Select( c => c.Id).ToList();
+        _downloader?.ShowForVolumeDownload( chapters, _manga!.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch()), volumeNumber!, downloadType);
     }
 
     private void DownloaderFinished()
     {
         _popupOpen = false;
         StateHasChanged();
+    }
+    
+    private void NavigateToIndex()
+    {
+        NavigationManager.NavigateTo("/");
     }
     
 }

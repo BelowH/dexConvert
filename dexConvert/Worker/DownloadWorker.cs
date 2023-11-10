@@ -20,6 +20,8 @@ public class DownloadWorker : IDownloadWorker
     public event EventHandler? OnTotalCompleted;
     
     public event EventHandler? PageNotFound;
+    
+    public event EventHandler? OnChapterNotFound;
 
     public DownloadWorker(IApiRepository apiRepository)
     {
@@ -83,16 +85,17 @@ public class DownloadWorker : IDownloadWorker
 
     public async Task<DownloadedChapter?> DownloadChapter(Guid chapterId,CancellationToken cancellationToken, bool dataSaver = false)
     {
+        DownloadedChapter? downloadedChapter = new DownloadedChapter
+        {
+            ChapterId = chapterId,
+        };
         try
         {
             ChapterData chapterData = await _apiRepository.GetChapter(chapterId, cancellationToken);
             List<string> imageData = dataSaver
                 ? chapterData.Chapter?.ImageDataSaver ?? new List<string>()
                 : chapterData.Chapter?.ImageData ?? new List<string>();
-            DownloadedChapter? downloadedChapter = new DownloadedChapter
-            {
-                ChapterId = chapterId,
-            };
+            
             if (chapterData.BaseUrl == null || chapterData.Chapter?.Hash == null)
             {
                 throw new Exception("Error while loading ChapterData");
@@ -101,18 +104,13 @@ public class DownloadWorker : IDownloadWorker
             List<Task> downloadTasks = new List<Task>();
             for (int i = 0; i < imageData.Count; i++)
             {
-                int iterator = i;
-                downloadTasks.Add( Task.Run( async () =>
+                int pageNum = i;
+                downloadTasks.Add(Task.Run(async () =>
                 {
-                    byte[]? page = await _apiRepository.GetPage(chapterData.BaseUrl, chapterData.Chapter.Hash, imageData[iterator],cancellationToken);
-                    if (page == null)
-                    {
-                        EventHandler? pageNotFoundHandler = PageNotFound;
-                        pageNotFoundHandler?.Invoke(this, EventArgs.Empty);
-                        return;
-                    }
-                    downloadedChapter.Pages.Add(iterator, page);
+                    byte[] loadedPage = await DownloadTask(chapterData, imageData[pageNum], cancellationToken);
+                    downloadedChapter.Pages!.Add(pageNum,loadedPage);
                 }, cancellationToken));
+                await Task.Delay(50, cancellationToken);
             }
 
             Task downloadChapterTask = Task.WhenAll(downloadTasks);
@@ -135,39 +133,33 @@ public class DownloadWorker : IDownloadWorker
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            
+
             return downloadedChapter;
-            /*
-            foreach (string img in imageData)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return null;
-                }
-                byte[]? page = await _apiRepository.GetPage(chapterData.BaseUrl, chapterData.Chapter.Hash, img,cancellationToken);
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return null;
-                }
-                if (page == null)
-                {
-                    EventHandler? pageNotFoundHandler = PageNotFound;
-                    pageNotFoundHandler?.Invoke(this, EventArgs.Empty);
-                    continue;
-                }
-                downloadedChapter.Pages.Add(page);
-                int chapterProgress = (int) ((float) downloadedChapter.Pages.Count / imageData.Count * 100);
-                ChapterProgressChanged(chapterProgress);
-                await Task.Delay(200, cancellationToken);
-            }
-            ChapterCompleted();
-            return downloadedChapter;
-            */
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return null;
+            EventHandler? eventHandler = OnChapterNotFound;
+            eventHandler?.Invoke(this, EventArgs.Empty);
+            return downloadedChapter;
         }
+    }
+    
+    private async Task<byte[]> DownloadTask(ChapterData chapterData, string image, CancellationToken cancellationToken)
+    {
+        byte[]? page = await _apiRepository.GetPage(chapterData.BaseUrl!, chapterData.Chapter!.Hash!, image,cancellationToken);
+        if (page != null) return page;
+        
+        //sometimes the page is not found, we wait 500ms and try again one more time, if it fails again an empty page is added 
+        Console.WriteLine("Page not found, trying again in 500ms");
+        await Task.Delay(500, cancellationToken);
+        page = await _apiRepository.GetPage(chapterData.BaseUrl!, chapterData.Chapter!.Hash!, image,cancellationToken);
+        if (page != null) return page;
+        
+        Console.WriteLine("Page not found, adding empty page");
+        EventHandler? pageNotFoundHandler = PageNotFound;
+        pageNotFoundHandler?.Invoke(this, EventArgs.Empty);
+        return Array.Empty<byte>();
+
     }
 }

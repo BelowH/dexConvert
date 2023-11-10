@@ -14,6 +14,9 @@ public interface IDownloadWorker
     
     public event EventHandler PageNotFound;
     
+    public event EventHandler? OnChapterNotFound;
+
+    
     public Task<List<DownloadedChapter?>?> DownloadListOfChapters(List<Guid> chapterIds, CancellationToken cancellationToken, bool dataSaver = false);
     
     public Task<DownloadedChapter?> DownloadChapter(Guid chapterId,CancellationToken cancellationToken, bool dataSaver = false);

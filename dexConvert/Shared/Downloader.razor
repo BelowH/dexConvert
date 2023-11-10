@@ -1,13 +1,13 @@
 ﻿@using MudBlazor;
 @using dexConvert.Worker
 @using dexConvert.Domains
+@using static dexConvert.Domains.EnumCollection
+@using System.Text
 @inject IJSRuntime JS
+@inject IDownloadWorker DownloadWorker
 <MudPaper>
     @if (string.IsNullOrWhiteSpace(_errorMessage))
     {
-        
-
-    
         <MudGrid  Class="d-flex justify-center">
             @if (_downloading)
             {
@@ -17,14 +17,14 @@
                 <MudItem xs="12">
                     @if (_volumeDownload)
                     {
-                        <MudStack Class="pa-2">
+                        <MudStack Class="pa-4">
                             <MudText Typo="Typo.h6" Align="Align.Center">@_infoText</MudText>
-                            <MudProgressLinear Value="_totalProgress" Class="px-2" Color="Color.Primary" Rounded="true" Size="Size.Large"></MudProgressLinear>
+                            <MudProgressLinear Value="_totalProgress"  Indeterminate="@(_cbzConversionProcessing || _pdfConversionProcessing)" Class="px-2" Color="Color.Primary" Rounded="true" Size="Size.Large"></MudProgressLinear>
                         </MudStack>
                     }
                     else
                     {
-                        <MudStack Class="pa-2">
+                        <MudStack Class="pa-4">
                             <MudText Typo="Typo.h6" Align="Align.Center">@_infoText</MudText>
                             <MudProgressLinear Indeterminate="true" Class="px-2" Color="Color.Primary" Rounded="true" Size="Size.Large"></MudProgressLinear>
                         </MudStack>
@@ -46,6 +46,12 @@
                     <MudAlert  Class="d-flex align-center justify-center" Severity="Severity.Warning"> dexConvert was not able to fetch @_missingPages Page(s), the chapter may be incomplete.</MudAlert>
                 </MudItem>
             }
+            @if(_missingChapters > 0)
+            {
+                <MudItem xs="12" Class="ma-4">
+                    <MudAlert  Class="d-flex align-center justify-center" Severity="Severity.Warning"> dexConvert was not able to fetch @_missingChapters Chapter(s), the volume may be incomplete.</MudAlert>
+                </MudItem>
+            }
             @if (_downloading)
             {
                 <MudItem xs="12" Class="d-flex align-center justify-center">
@@ -62,7 +68,10 @@
     }
     else
     {
-        <MudAlert Class="ma-4" Severity="Severity.Error"> An error occurred while downloading or converting this chapter, if you think this is a bug please consider reporting it! </MudAlert>
+        <MudAlert Class="ma-8" Severity="Severity.Error">@_errorMessage</MudAlert>
+        <MudItem xs="12" Class="d-flex align-center justify-center">
+            <MudButton OnClick="Abort" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Cancel">Close</MudButton>
+        </MudItem>
     }
 
 </MudPaper>
@@ -101,6 +110,8 @@
     private bool _pdfConversionProcessing = false;
     
     private int _missingPages = 0;
+    
+    private int _missingChapters = 0;
 
     private string _infoText = "Download Progress";
     
@@ -110,108 +121,108 @@
 
     private CancellationTokenSource  _cancellationToken = new CancellationTokenSource();
     
-    
-    public async void Activate(IDownloadWorker downloadWorker,Guid chapterId, string mangaName, string chapterName, EnumCollection.DownloadType downloadType)
+    private DownloadType _downloadType;
+
+    public async void ShowForChapterDownload(Guid chapterId, string mangaName, string chapterName, DownloadType downloadType)
     {
         try
         {
+            _downloadType = downloadType;
             _chapterId = chapterId;
             _mangaName = mangaName;
             _identifier = chapterName;
             _downloading = true;
             _missingPages = 0;
             _errorMessage = string.Empty;
-            downloadWorker.OnChapterProgressChanged += (_, i) =>
-            {
-                _progress = i;
-                StateHasChanged();
-            };
-            downloadWorker.PageNotFound += (_, _) =>
-            {
-                _missingPages++;
-                StateHasChanged();
-            };
-            downloadWorker.OnChapterCompleted += async (_, _) =>
-            {
-                switch (downloadType)
-                {
-                    case EnumCollection.DownloadType.CBZ:
-                        await DownloadCbz();
-                        break;
-                    case EnumCollection.DownloadType.PDF:
-                        await DownloadPdf();
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(downloadType), downloadType, null);
-                }
-                _downloading = false;
-                _inputDisabled = false;
-                StateHasChanged();
-            };
-            _downloadedChapter = await downloadWorker.DownloadChapter(_chapterId,_cancellationToken.Token ,false);
+            _downloadedChapter = null;
+            DownloadWorker.OnChapterProgressChanged += DownloadWorkerOnOnChapterProgressChanged;
+            DownloadWorker.PageNotFound += DownloadWorkerOnPageNotFound;
+            DownloadWorker.OnChapterCompleted += DownloadWorkerOnOnTotalCompleted;
+            DownloadWorker.OnChapterNotFound += (_, _) => throw new Exception("Sorry, this chapter Metadata was not found.");
+            _downloadedChapter = await DownloadWorker.DownloadChapter(_chapterId,_cancellationToken.Token ,false);
             
         }
         catch (Exception e)
         {
+            _cancellationToken.Cancel();
             _errorMessage = e.Message;
             StateHasChanged();
         }
     }
     
-    public async Task Activate(IDownloadWorker downloadWorker,List<Guid> chapterIds, string mangaName, string volumeName, EnumCollection.DownloadType downloadType)
+    public async void ShowForVolumeDownload(List<Guid> chapterIds, string mangaName, string volumeName, DownloadType downloadType)
     {
         try
         {
-            
+            _downloadType = downloadType;
             _mangaName = mangaName;
             _identifier = volumeName;
             _downloading = true;
             _missingPages = 0;
             _errorMessage = string.Empty;
             _volumeDownload = true;
-            downloadWorker.OnTotalCompleted += async (_, _) =>
-            {
-                switch (downloadType)
-                {
-                    case EnumCollection.DownloadType.CBZ:
-                        await DownloadCbz();
-                        break;
-                    case EnumCollection.DownloadType.PDF:
-                        await DownloadPdf();
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(downloadType), downloadType, null);
-                }
-                _downloading = false;
-                _inputDisabled = false;
-                StateHasChanged();
-            };
-            downloadWorker.OnTotalProgressChanged += (_, i) =>
-            {
-                _totalProgress = i;
-                StateHasChanged();
-            };
-            downloadWorker.OnChapterProgressChanged += (_, i) =>
-            {
-                _progress = i;
-                StateHasChanged();
-            };
-            downloadWorker.PageNotFound += (_, _) =>
-            {
-                _missingPages++;
-                StateHasChanged();
-            };
-            
-            _downloadedChapters = await downloadWorker.DownloadListOfChapters(chapterIds,_cancellationToken.Token ,false);
+            _downloadedChapter = null;
+            DownloadWorker.OnTotalCompleted += DownloadWorkerOnOnTotalCompleted;
+            DownloadWorker.OnTotalProgressChanged += DownloadWorkerOnOnTotalProgressChanged;
+            DownloadWorker.OnChapterProgressChanged += DownloadWorkerOnOnChapterProgressChanged;
+            DownloadWorker.PageNotFound += DownloadWorkerOnPageNotFound;
+            DownloadWorker.OnChapterNotFound += DownloadWorkerOnChapterNotFound;
+            _downloadedChapters = await DownloadWorker.DownloadListOfChapters(chapterIds,_cancellationToken.Token ,false);
         }
         catch (Exception e)
         {
+            _cancellationToken.Cancel();
             _errorMessage = e.Message;
             StateHasChanged();
         }
     }
 
+    private async void DownloadWorkerOnOnTotalCompleted(object? sender, EventArgs e)
+    {
+        DownloadWorker.OnTotalCompleted -= DownloadWorkerOnOnTotalCompleted;
+        DownloadWorker.OnTotalProgressChanged -= DownloadWorkerOnOnTotalProgressChanged;
+        DownloadWorker.OnChapterProgressChanged -= DownloadWorkerOnOnChapterProgressChanged;
+        DownloadWorker.PageNotFound -= DownloadWorkerOnPageNotFound;
+        switch (_downloadType)
+        {
+            case DownloadType.CBZ:
+                await DownloadCbz();
+                break;
+            case DownloadType.PDF:
+                await DownloadPdf();
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(_downloadType), _downloadType, null);
+        }
+        _downloading = false;
+        _inputDisabled = false;
+        StateHasChanged();
+    }
+    
+    private void DownloadWorkerOnOnTotalProgressChanged(object? sender, int e)
+    {
+        _totalProgress = e;
+        StateHasChanged();
+    }
+    
+    private void DownloadWorkerOnOnChapterProgressChanged(object? sender, int e)
+    {
+        _progress = e;
+        StateHasChanged();
+    }
+    
+    private void DownloadWorkerOnPageNotFound(object? sender, EventArgs e)
+    {
+        _missingPages++;
+        StateHasChanged();
+    }
 
+    private void DownloadWorkerOnChapterNotFound(object? sender, EventArgs e)
+    {
+        _missingChapters++;
+        StateHasChanged();
+    }
+    
     private async Task DownloadPdf()
     {
         try
@@ -223,14 +234,17 @@
             await Task.Delay(50);
             string fileName;
             Stream pdf;
+            // remove non latin1 characters, this can cause issues in some file systems, thanks "oshi no ko" for having wierd brackets in your name 
+            byte[] bytes = Encoding.Latin1.GetBytes(_mangaName!);
+            string normalizedMangaName = Encoding.Latin1.GetString(bytes).Replace("?","");
             if (_volumeDownload)
             {
-                fileName = $"{_mangaName}_V_{_identifier}.pdf";
+                fileName = $"{normalizedMangaName}_V_{_identifier}.pdf";
                 pdf = new MemoryStream(PdfService.ConvertToPdf(_downloadedChapters!));
             }
             else
             {
-                fileName = $"{_mangaName}_Ch_{_identifier}.pdf";
+                fileName = $"{normalizedMangaName}_Ch_{_identifier}.pdf";
                 pdf = new MemoryStream( PdfService.ConvertToPdf(_downloadedChapter!));
             }
             using DotNetStreamReference streamRef = new DotNetStreamReference(pdf);
@@ -240,8 +254,7 @@
             StateHasChanged();
             await pdf.DisposeAsync();
         }
-        catch
-            (Exception e)
+        catch (Exception e)
         {
             Console.WriteLine(e);
             _errorMessage = e.Message;
@@ -260,15 +273,18 @@
             await Task.Delay(50);
             string fileName;
             Stream cbz;
+            // remove non latin1 characters, this can cause issues in some file systems, thanks "oshi no ko" for having wierd brackets in your name 
+            byte[] bytes = Encoding.Latin1.GetBytes(_mangaName!);
+            string normalizedMangaName = Encoding.Latin1.GetString(bytes);
             if (_volumeDownload)
             {
-                fileName = $"{_mangaName}_V_{_identifier}.cbz";
+                fileName = $"{normalizedMangaName}_V_{_identifier}.cbz";
                 cbz = await CbzService.ConvertToCbz(_downloadedChapters!, _cancellationToken.Token);
             }
             else
             {
                 
-                fileName = $"{_mangaName}_Ch_{_identifier}.cbz";
+                fileName = $"{normalizedMangaName}_Ch_{_identifier}.cbz";
                 cbz = await CbzService.ConvertToCbz(_downloadedChapter!, _cancellationToken.Token);
             }
             using DotNetStreamReference streamRef = new DotNetStreamReference(cbz);

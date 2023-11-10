@@ -13,7 +13,7 @@
     <MudItem xs="12">
         <MudStack Row="true" Class="pa-2">
             <MudTextField T="string" @bind-value="_searchText" Label="Search Manga" Variant="Variant.Filled" HelperTextOnFocus="true" HelperText="e.g.: Attack on Titan" TextChanged="() => _hasTextChanged = true"></MudTextField>
-            <MudButton Variant="Variant.Filled" Disabled="_loading" Color="Color.Primary" OnClick="LoadManga" Style="height: 60px">
+            <MudButton Variant="Variant.Outlined" Disabled="_loading" Color="Color.Primary" OnClick="LoadManga" Style="height: 60px">
                 @if(_loading)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" />
@@ -36,21 +36,38 @@
         {
             @if (_searchResults.Count > 0)
             {
-                <MudGrid Class="mb-16">
+                <MudGrid Class="mb-16" Style="align-content: center">
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h5">Search Results for: @_searchText</MudText>
+                    </MudItem>
                     @foreach (Manga manga in _searchResults)
                     {
-                        <MudItem xs="12" Class="ma-2">
-                            <MudPaper Elevation="3" Style="height: 256px; display: flex; justify-content: left; align-items: flex-end">
-                                <MudGrid>
-                                    <MudItem xs="3">
-                                        <MudImage Src="@manga.CoverLink" Height="256"></MudImage>
-                                    </MudItem>
-                                    <MudItem xs="9">
-                                        <MudText Typo="Typo.subtitle1">@manga.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())</MudText>
-                                        <MudButton  Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.DoubleArrow" Color="Color.Primary" OnClick="() => NavigateToManga(manga)">Convert</MudButton >
-                                    </MudItem>
-                                </MudGrid>
-                            </MudPaper>
+                        <MudItem xs="6" sm="4" md="4" lg="3" Class="mt-4" Style=" display: flex;">
+                            <MudGrid Spacing="1">
+                                <MudItem xs="12" Class="mx-2" Style=" display: flex;">
+                                    <MudHidden Breakpoint="Breakpoint.MdAndDown" Invert="true">
+                                        <MudImage Src="@manga.CoverLink" Height="300" Class="rounded-lg" ObjectPosition="ObjectPosition.Center" ObjectFit="ObjectFit.Cover"></MudImage>
+                                    </MudHidden>
+                                    <MudHidden Breakpoint="Breakpoint.LgAndUp" Invert="true">
+                                        <MudImage Src="@manga.CoverLink" Height="400" Class="rounded-lg" ObjectPosition="ObjectPosition.Center" ObjectFit="ObjectFit.Cover"></MudImage>
+                                    </MudHidden>
+                                </MudItem>
+                                <MudItem xs="12" Class="mx-2">
+                                    <MudText Typo="Typo.h6">@manga.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())</MudText>
+                                </MudItem>
+                                <MudItem xs="12" Class="ma-2 mt-auto">
+                                    <MudButton Variant="Variant.Outlined" EndIcon="@Icons.Material.Filled.DoubleArrow" Color="Color.Primary" OnClick="() => NavigateToManga(manga)">Convert</MudButton >
+                                </MudItem>
+                            </MudGrid>
+                            <!--<MudCard>
+                                <MudCardMedia Image="@manga.CoverLink"></MudCardMedia>
+                                <MudCardContent Style="min-height: 100px">
+                                    <MudText Typo="Typo.subtitle1">@manga.Attributes!.Title!.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())</MudText>
+                                </MudCardContent>
+                                <MudCardActions>
+                                    <MudButton Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.DoubleArrow" Color="Color.Primary" OnClick="() => NavigateToManga(manga)">Convert</MudButton >
+                                </MudCardActions>
+                            </MudCard>-->
                         </MudItem>
                     }
                     <MudItem xs="12" Class="d-flex align-center justify-center mud-width-full">
@@ -78,6 +95,7 @@
 
 @code
 {
+    
 
     private bool _loading;
     

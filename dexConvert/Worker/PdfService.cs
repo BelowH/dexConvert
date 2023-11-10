@@ -2,29 +2,43 @@
 using dexConvert.Domains;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
+using Org.BouncyCastle.Utilities;
 
 namespace dexConvert.Worker;
 
-public class PdfService
+public static class PdfService
 {
 
-    public static byte[] ConvertToPdf(List<DownloadedChapter> chapters)
+    public static byte[] ConvertToPdf(List<DownloadedChapter?>? chapters)
     {
         MemoryStream memoryStream = new MemoryStream();
         Document document = new Document();
         PdfWriter.GetInstance(document, memoryStream);
         document.Open();
-        foreach (Image? pdfImage in from downloadedChapter in chapters from image in downloadedChapter.Pages.OrderBy(o => o.Key) select Image.GetInstance(image.Value))
+        for (int i = 0; i < chapters!.Count; i++)
         {
-            float origWidth = pdfImage.Width;
-            float origHeight = pdfImage.Height;
-            pdfImage.ScaleToFit(origWidth, origHeight);
-            pdfImage.SetAbsolutePosition(0,0);
-            Rectangle rectangle = new Rectangle(origWidth, origHeight);
-            document.SetPageSize(rectangle);
-            document.NewPage();
-            document.Add(pdfImage);
+            if (chapters[i] == null || chapters[i]?.Pages  == null)
+            {
+                continue;
+            }
+            for (int j = 0; j < chapters[i]?.Pages?.Count; j++)
+            {
+                if (!chapters[i]!.Pages!.TryGetValue(j, out byte[]? page) || page == Arrays.EmptyBytes)
+                {
+                    continue;
+                }
+                Image? pdfImage = Image.GetInstance(page);
+                float origWidth = pdfImage.Width;
+                float origHeight = pdfImage.Height;
+                pdfImage.ScaleToFit(origWidth, origHeight);
+                pdfImage.SetAbsolutePosition(0,0);
+                Rectangle rectangle = new Rectangle(origWidth, origHeight);
+                document.SetPageSize(rectangle);
+                document.NewPage();
+                document.Add(pdfImage);
+            }
         }
+     
         document.CloseDocument();
         return memoryStream.ToArray();
     }
@@ -36,9 +50,17 @@ public class PdfService
         PdfWriter.GetInstance(document, memoryStream);
         document.Open();
         document.SetMargins(0, 0, 0, 0);
-        foreach (KeyValuePair<int,byte[]> image in chapter.Pages.OrderBy(o => o.Key))
+        if (chapter.Pages  == null)
         {
-            Image? pdfImage = Image.GetInstance(image.Value);
+            throw new Exception("No Pages in Chapter");
+        }
+        for (int i = 0; i < chapter.Pages.Count; i++)
+        {
+            if (! chapter.Pages.TryGetValue(i, out byte[]? page) || page == Arrays.EmptyBytes)
+            {
+                continue;
+            }
+            Image? pdfImage = Image.GetInstance(page);
             float origWidth = pdfImage.Width;
             float origHeight = pdfImage.Height;
             pdfImage.ScaleToFit(origWidth, origHeight);
