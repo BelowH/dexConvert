@@ -9,25 +9,29 @@ on:
       - main  # Or your default branch
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+      # Checkout the code
+      - uses: actions/checkout@v2
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '6.0.x'
+      # Install .NET Core SDK
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+          
+      # Install dotnet wasm buildtools workload
+      - name: Install .NET WASM Build Tools
+        run: dotnet workload install wasm-tools
+          
+      # Publishes Blazor project to the release-folder
+      - name: Publish .NET Core Project
+        run: dotnet publish Web/Web.csproj -c:Release -p:GHPages=true -o dist/Web --nologo
 
-    - name: Restore dependencies
-      run: dotnet restore ./dexConvert/dexConvert.csproj
-
-    - name: Publish
-      run: dotnet publish ./dexConvert/dexConvert.csproj -c Release -o build
-
-    - name: Deploy to GitHub Pages
-      uses: JamesIves/github-pages-deploy-action@4.1.4
-      with:
-        branch: gh-pages  # The branch the action should deploy to.
-        folder: build/wwwroot  # The folder the action should deploy.
-        token: ${{ secrets.DEPLOY_TOKEN }}
+      - name: Commit wwwroot to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@3.7.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: dist/Web/wwwroot
