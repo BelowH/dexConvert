@@ -17,10 +17,10 @@ jobs:
         dotnet-version: '6.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore ./dexConvert/dexConvert.csproj
 
     - name: Publish
-      run: dotnet publish -c Release -o build
+      run: dotnet publish ./dexConvert/dexConvert.csproj -c Release -o build
 
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@4.1.4
