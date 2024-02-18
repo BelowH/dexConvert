@@ -11,8 +11,7 @@ public interface IMangaService
 
     public Task<FeedResponse> GetChapters(Guid mangaId, List<string> langs, bool deepSearch = false);
 
-    public Guid AddSelection(Selection selection);
 
-    public Selection? GetSelection(Guid id);
+    public List<Manga>? GetSearch();
 
 }

@@ -14,4 +14,6 @@ public interface IApiRepository : IDisposable
     
     public Task<ScanlationGroupCollectionResponse> GetScanlationGroups(List<string> ids, int offset = 0, int limit = 100);
 
+    public Task<AuthorResponse> GetAuthorById(Guid id);
+
 }

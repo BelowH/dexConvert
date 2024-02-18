@@ -16,4 +16,6 @@ public interface IPreferenceService
     public void SetDeepSearch(bool deepSearch);
     
     public bool GetDeepSearch();
+
+    public List<string> GetSelectedLanguage();
 }

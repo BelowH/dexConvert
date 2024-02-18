@@ -3,21 +3,41 @@
 @inherits LayoutComponentBase
 @inject NavigationManager NavigationManager;
 
-    <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="@_customTheme"/>
-    <MudDialogProvider/>
-    <MudSnackbarProvider/>
 
+<style>
+
+    .gradientButton{
+        color: white;  
+        background:  rgb(175,105,239);
+        background: linear-gradient(90deg, rgba(175,105,239,1) 0%, rgba(23,62,98,1) 100%);
+        border-color:  rgb(175,105,239);
+    }
+    
+    .gradientButton:hover{  
+        color: white;    
+        background:  rgb(175,105,239);
+        background: linear-gradient(90deg,  rgba(23,62,98,1) 0%,rgba(175,105,239,1) 100%);
+        border-color:  rgba(23,62,98,1);
+    }
+
+</style>
+
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="@_customTheme"/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
 <MudLayout>
-    <MudAppBar>
+    <!-- <MudAppBar>
         <MudLink OnClick="NavigateHome" Underline="Underline.None">
             <MudStack Row="true">
-                <MudImage Src="logo_cut.png" Height="40" Width="40"></MudImage>
-                <MudText Typo="Typo.h3" Color="Color.Secondary">DexConvert</MudText>
+                <MudImage Src="logo_cut.png" Height="30" Width="30"></MudImage>
+                <MudText Typo="Typo.h3" Color="Color.Secondary" Class="pl-8">DexConvert</MudText>
             </MudStack>
         </MudLink>
         <MudSpacer></MudSpacer>
-        <LangSelector></LangSelector>
-    </MudAppBar>
+        <MudItem Class="d-flex justify-end flex-grow-1">
+            <LangSelector></LangSelector>
+        </MudItem>
+    </MudAppBar> -->
     <MudMainContent Class="my-5" Style="min-height: 100%; height: 100%">
         <MudContainer MaxWidth="MaxWidth.Large" Class="mb-16">
             @Body
@@ -28,6 +48,7 @@
             Results and Content powered by <MudLink Href="https://mangadex.org">MangaDex</MudLink> API
         </MudText>
         <MudSpacer></MudSpacer>
+        <MudButton Class="mr-4 ml-4 gradientButton" Variant="Variant.Outlined" Href="https://github.com/BelowH/dexConvert/issues" StartIcon="@Icons.Material.Filled.BugReport">Report a bug</MudButton>
         <MudLink Href="https://github.com/BelowH">
             <MudIcon Icon="@Icons.Custom.Brands.GitHub"></MudIcon>
         </MudLink>

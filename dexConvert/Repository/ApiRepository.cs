@@ -52,10 +52,14 @@ public class ApiRepository : IApiRepository
             NameValueCollection query = System.Web.HttpUtility.ParseQueryString(string.Empty);
             if (!deepSearch)
             {
-                query.Add("translatedLanguage[]",string.Join(",", langs)); 
+                foreach (string lang in langs)
+                {
+                    query.Add("translatedLanguage[]",lang);    
+                }
             }
             query.Add("offset",offset.ToString());
-            HttpResponseMessage response = await _client.GetAsync(MangaEndpoint + "/" + mangaId + "/feed?" + query);
+            string endpoint = MangaEndpoint + "/" + mangaId.ToString("D") + "/feed?" + query;
+            HttpResponseMessage response = await _client.GetAsync(endpoint);
             response.EnsureSuccessStatusCode();
             
             string responseContent = await response.Content.ReadAsStringAsync();
@@ -132,6 +136,22 @@ public class ApiRepository : IApiRepository
             response.EnsureSuccessStatusCode();
             string responseContent = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<ScanlationGroupCollectionResponse>(responseContent)!;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+    public async Task<AuthorResponse> GetAuthorById(Guid id)
+    {
+        try
+        {
+            HttpResponseMessage response = await _client.GetAsync($"/author/{id}");
+            response.EnsureSuccessStatusCode();
+            string responseContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<AuthorResponse>(responseContent)!;
         }
         catch (Exception e)
         {

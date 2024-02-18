@@ -5,6 +5,7 @@
 @using System.Text
 @inject IJSRuntime JS
 @inject IDownloadWorker DownloadWorker
+@implements IDisposable
 <MudPaper>
     @if (string.IsNullOrWhiteSpace(_errorMessage))
     {
@@ -37,7 +38,16 @@
                     <MudText Typo="Typo.h4" Align="Align.Center">
                         <MudIcon Icon="@Icons.Material.Filled.Celebration"></MudIcon> Download Completed !<MudIcon Icon="@Icons.Material.Filled.Celebration"></MudIcon>
                     </MudText>
+                    <MudStack>
+                        <MudText Typo="Typo.body1" Align="Align.Center">
+                            Thank you for using  <b style="color: #40A4FF">DexConvert</b>!
+                        </MudText>
+                        <MudText Typo="Typo.body1" Align="Align.Center">
+                            Please support the original Creator!
+                        </MudText>
+                    </MudStack>
                 </MudItem>
+                
             }
             
             @if(_missingPages > 0)
@@ -247,6 +257,8 @@
                 fileName = $"{normalizedMangaName}_Ch_{_identifier}.pdf";
                 pdf = new MemoryStream( PdfService.ConvertToPdf(_downloadedChapter!));
             }
+            _downloadedChapter = null;
+            _downloadedChapters = null;
             using DotNetStreamReference streamRef = new DotNetStreamReference(pdf);
             await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
             _cbzConversionProcessing = false;
@@ -287,10 +299,13 @@
                 fileName = $"{normalizedMangaName}_Ch_{_identifier}.cbz";
                 cbz = await CbzService.ConvertToCbz(_downloadedChapter!, _cancellationToken.Token);
             }
+            _downloadedChapter = null;
+            _downloadedChapters = null;
             using DotNetStreamReference streamRef = new DotNetStreamReference(cbz);
             await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
             _cbzConversionProcessing = false;
             _inputDisabled = false;
+            await cbz.DisposeAsync();
             StateHasChanged();
             
         }
@@ -301,12 +316,21 @@
         }
     }
     
-    private void Complete() => OnComplete?.Invoke();
-    
+    private void Complete()
+    {
+        Dispose();
+        OnComplete?.Invoke();
+    }
+
     private void Abort()
     {
         _cancellationToken.Cancel();
         OnAbort?.Invoke();
+    }
+
+    public void Dispose()
+    {
+        _cancellationToken.Dispose();
     }
 
 }

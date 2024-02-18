@@ -3,24 +3,23 @@
 @using System.Globalization
 @inject IPreferenceService PreferenceService
 
-<MudContainer MaxWidth="MaxWidth.Small"  Class="d-flex object-right-top">
-    <MudSelect T="string" Lable="Language" Variant="Variant.Outlined" Label="Language" ValueChanged="SetLanguage">
+<MudSelect bind-Value="DefaultLangCode" Style="width: 50px" T="string" Lable="Language" Variant="Variant.Outlined" Label="Language" ValueChanged="SetLanguage">
         @foreach (KeyValuePair<string, string> culture in _availableLangs)
         {
-            <MudSelectItem Value="@culture.Key">
-                <MudImage Src=@("https://flagcdn.com/w20/" + culture.Key + ".png") Height="14" Class="mr-1 rounded-lg"></MudImage>
-                @culture.Value
+            <MudSelectItem Value="culture.Key">
+                <MudImage Src="@("https://unpkg.com/language-icons/icons/"+ culture.Key +".svg")" Height="14" Class="mr-1 rounded-lg"></MudImage> @culture.Value
             </MudSelectItem>
         }
-    </MudSelect>
-</MudContainer>
+</MudSelect>
 
 
 @code {
     
     private Dictionary<string, string> _availableLangs = new Dictionary<string, string>();
-
-    private string _defaultLang = "gb";
+    
+    private const string DefaultLangCode = "en";
+    
+    private const string DefaultLangName = "English";
     
     protected override void OnInitialized()
     {
@@ -29,6 +28,11 @@
     
     private void SetLanguage(string lang)
     {
+        if (lang.Equals(DefaultLangName))
+        {
+            PreferenceService.SetCulturePreference(DefaultLangCode);
+            return;
+        }
         PreferenceService.SetCulturePreference(lang);
     }
     

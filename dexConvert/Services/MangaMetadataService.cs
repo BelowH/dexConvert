@@ -58,4 +58,24 @@ public class MangaMetadataService : IMangaMetadataService
             return scanlationGroups;
         }
     }
+
+    public async Task<Author?> GetAuthorByManga(Manga manga)
+    {
+        try
+        {
+            
+            Guid? id = manga.Relationships?.FirstOrDefault(r => r.Type is "author")?.Id;
+            if (id == null)
+            {
+                return null;
+            }
+            AuthorResponse authorResponse = await _apiRepository.GetAuthorById(id.Value);
+            return authorResponse.Data;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return null;
+        }
+    }
 }

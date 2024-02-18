@@ -10,9 +10,9 @@ public class MangaService : IMangaService
 {
     private readonly IApiRepository _apiRepository;
     
-    private readonly Dictionary<Guid,Manga> _mangaCache = new Dictionary<Guid, Manga>();
+    private readonly Dictionary<Guid,Manga> _mangas = new Dictionary<Guid, Manga>();
     
-    private readonly Dictionary<Guid,Selection> _selectionCache = new Dictionary<Guid, Selection>();
+    private readonly Dictionary<Guid,Selection> _selection = new Dictionary<Guid, Selection>();
 
     public MangaService(IApiRepository apiRepository)
     {
@@ -22,6 +22,7 @@ public class MangaService : IMangaService
 
     public async Task<(IList<Manga> manga, int total)> SearchMangaByTitle(string title, int offset)
     {
+        _mangas.Clear();
         MangaSearchResponse searchResult = await _apiRepository.GetManga(title, offset);
         foreach (Manga manga in searchResult.Data)
         {
@@ -30,14 +31,14 @@ public class MangaService : IMangaService
             {
                 manga.CoverLink = Constants.CoverBaseUrl + "/covers/" + manga.Id + "/" + coverFileName + ".512.jpg";
             }
-            _mangaCache.TryAdd(manga.Id, manga);
+            _mangas.TryAdd(manga.Id, manga);
         }
         return (searchResult.Data, searchResult.Total);
     }
 
     public Manga? GetFromCache(Guid id)
     {
-        return _mangaCache.TryGetValue(id, out Manga? cache) ? cache : null;
+        return _mangas.GetValueOrDefault(id);
     }
     
     public async Task<FeedResponse> GetChapters(Guid mangaId, List<string> langs, bool deepSearch = false)
@@ -65,18 +66,19 @@ public class MangaService : IMangaService
         };
         return result;
     }
-    
+
+    public List<Manga>? GetSearch()
+    {
+        return !_mangas.Any() ? null : _mangas.Values.ToList();
+    }
+
     public Guid AddSelection( Selection selection)
     {
         Guid id = Guid.NewGuid();
-        _selectionCache.TryAdd(id, selection);
+        _selection.TryAdd(id, selection);
         return id;
     }
     
-    public Selection? GetSelection(Guid id)
-    {
-        return _selectionCache.TryGetValue(id, out Selection? selection) ? selection : null;
-    }
 
     private List<Chapter> FilterChapters(List<Chapter> chapters, out int numFiltered, out int duplicateCount)
     {

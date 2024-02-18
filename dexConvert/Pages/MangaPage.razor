@@ -20,118 +20,128 @@
     }
 
 </style>
-<MudOverlay @bind-Visible="_popupOpen" DarkBackground="true" AutoClose="false">
-    <Downloader OnComplete="@DownloaderFinished" OnAbort="@DownloaderFinished" @ref="_downloader"></Downloader>
-</MudOverlay>
-@if (_loading)
-{
-    <MudGrid>
-        <MudItem Class="d-flex flex-column align-center justify-center mud-width-full" xs="12">
-            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true"/>
-        </MudItem>
-    </MudGrid>
-}
-else
-{
-    <MudGrid Class="mb-16">
-        <MudItem xs="12">
-            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="NavigateToIndex">Return to Search</MudButton>
-        </MudItem>
-        <MudItem xs="12">
-            @if (_manga is not null)
-            {
-                <MudGrid Class="pa-2">
-                    <MudItem xs="3">
-                        <MudImage Src="@_manga.CoverLink" Class="rounded-lg" Height="400">
-
-                        </MudImage>
-                    </MudItem>
-                    <MudItem xs="9">
-                        <MudText Typo="Typo.h4" Align="Align.Left">
-                            @_manga.Attributes?.Title?.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())
-                        </MudText>
-                        <MudText Typo="Typo.body1" Align="Align.Left">
-                            @_manga.Attributes?.Description?.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())
-                        </MudText>
-                    </MudItem>
-                    @if (_filteredCount > 0)
-                    {
-                        <MudItem xs="12">
-                            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Elevation="10" Class="pa-4 ma-4">
-                                Attention! @_filteredCount chapters where filtered either because they had no pages or are not available for download.
-                            </MudAlert>
+<MudContainer>
+    <MudOverlay @bind-Visible="_popupOpen" DarkBackground="true" AutoClose="false">
+        <Downloader OnComplete="@DownloaderFinished" OnAbort="@DownloaderFinished" @ref="_downloader"></Downloader>
+    </MudOverlay>
+    @if (_loading)
+    {
+        <MudGrid>
+            <MudItem Class="d-flex flex-column align-center justify-center mud-width-full" xs="12">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true"/>
+            </MudItem>
+        </MudGrid>
+    }
+    else
+    {
+        <MudGrid Class="mb-16">
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="NavigateToIndex">Return to Search</MudButton>
+            </MudItem>
+            <MudItem xs="12">
+                @if (_manga is not null)
+                {
+                    <MudGrid Class="pa-2">
+                        <MudItem xs="12" md="3">
+                            <MudImage Src="@_manga.CoverLink" Class="rounded-lg" Height="400">
+    
+                            </MudImage>
                         </MudItem>
-                    }
-                    @if (_duplicateCount > 0)
-                    {
-                        <MudItem xs="12">
-                            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Elevation="10" Class="pa-4  ma-4">
-                                Attention! Some chapters are duplicate please be careful when downloading a whole volume.
-                            </MudAlert>
+                        <MudItem xs="12" md="9">
+                            <MudText Typo="Typo.h4" Align="Align.Left">
+                                @_manga.Attributes?.Title?.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())
+                            </MudText>
+                            <MudText Typo="Typo.body1" Align="Align.Left">
+                                @_manga.Attributes?.Description?.GetLocalizedTitle(PreferenceService.GetLangPreferenceForSearch())
+                            </MudText>
+                            <MudDivider Class="mt-2"></MudDivider>
+                            <MudStack Row="true" Class="mt-2">
+                                <MudText Typo="Typo.body1">Author:</MudText>
+                                <MudLink Href="@($"https://mangadex.org/author/{_author?.Id}")">
+                                    <b>@_author?.Attributes.Name</b>
+                                </MudLink>
+                            </MudStack>
                         </MudItem>
-                    }
-                </MudGrid>
-            }
-            else
-            {
-                <MudAlert Severity="Severity.Error" Variant="Variant.Filled">
-                    Failed to load manga
-                </MudAlert>
-            }
-        </MudItem>
-        <MudItem xs="12">
-            @if (_loadedChapters is {Count: > 0 })
-            {
-                <MudTable Hover="true"
-                          Breakpoint="Breakpoint.Sm"
-                          FixedHeader="true"
-                          Items="_loadedChapters"
-                          GroupBy="_groupDefinition"
-                          MultiSelection="false">
-                    <GroupHeaderTemplate>
-                        <MudTh Class="mud-table-cell-custom-group" colspan="1">
-                            @($"{context.GroupName}: {context.Key}")
-                        </MudTh>
-                        <MudTh Class="mud-table-cell-custom-group" colspan="2"></MudTh>
-                        <MudTh Class="mud-table-cell-custom-group" colspan="1">
-                            <MudStack Row="true">
-                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.MenuBook" OnClick="() => DownloadVolume(context.Key.ToString(), DownloadType.CBZ)">Download .cbz</MudButton>
-                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PictureAsPdf" OnClick="() => DownloadVolume(context.Key.ToString(), DownloadType.PDF)">Download .pdf</MudButton>
-                            </MudStack>
-                        </MudTh>
-                    </GroupHeaderTemplate>
-                    <RowTemplate>
-                        <MudTd>Chapter @(context.Attributes?.Chapter ?? "Unknown")</MudTd>
-                        <MudTd>@(context.Attributes?.Title ?? "Unknown")</MudTd>
-                        <MudTd>
-                            @{
-                                string scanlationGroupId = context.Relationships?.FirstOrDefault(r => r.Type.Equals("scanlation_group"))?.Id ?? "";
-                                ScanlationGroupResponse? scanlationGroupResponse = _scanlationGroups.FirstOrDefault(s => s.Id.Equals(scanlationGroupId));
-                            }
-                            <MudStack Row="true">
-                                <MudIcon Size="Size.Small" Icon="@Icons.Material.Filled.Groups"></MudIcon>
-                                <MudLink Href="@($"https://mangadex.org/group/{scanlationGroupId}")">@(scanlationGroupResponse != null ? scanlationGroupResponse.Attributes?.Name : "Unknown")</MudLink>
-                            </MudStack>
-                        </MudTd>
-                        <MudTd>
-                            <MudStack Row="true">
-                                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.MenuBook" OnClick="() => DownloadChapter(context.Id, context.Attributes?.Chapter!, DownloadType.CBZ)">Download .cbz</MudButton>
-                                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.PictureAsPdf" OnClick="() => DownloadChapter(context.Id, context.Attributes?.Chapter!, DownloadType.PDF)">Download .pdf</MudButton>
-                            </MudStack>
+                        @if (_filteredCount > 0)
+                        {
+                            <MudItem xs="12">
+                                <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Elevation="10" Class="pa-4 ma-4">
+                                    Attention! @_filteredCount chapters where filtered either because they had no pages or are not available for download.
+                                </MudAlert>
+                            </MudItem>
+                        }
+                        @if (_duplicateCount > 0)
+                        {
+                            <MudItem xs="12">
+                                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Elevation="10" Class="pa-4  ma-4">
+                                    Attention! Some chapters are duplicate please be careful when downloading a whole volume.
+                                </MudAlert>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Filled">
+                        Failed to load manga
+                    </MudAlert>
+                }
+            </MudItem>
+            <MudItem xs="12">
+                @if (_loadedChapters is {Count: > 0 })
+                {
+                    <MudTable Hover="true"
+                              Breakpoint="Breakpoint.Sm"
+                              FixedHeader="true"
+                              Items="_loadedChapters"
+                              GroupBy="_groupDefinition"
+                              MultiSelection="false">
+                        <GroupHeaderTemplate>
+                            <MudTh Class="mud-table-cell-custom-group" colspan="1">
+                                @($"{context.GroupName}: {context.Key}")
+                            </MudTh>
+                            <MudTh Class="mud-table-cell-custom-group" colspan="2"></MudTh>
+                            <MudTh Class="mud-table-cell-custom-group" colspan="1">
+                                <MudStack Row="true">
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.MenuBook" OnClick="() => DownloadVolume(context.Key.ToString(), DownloadType.CBZ)">Download .cbz</MudButton>
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PictureAsPdf" OnClick="() => DownloadVolume(context.Key.ToString(), DownloadType.PDF)">Download .pdf</MudButton>
+                                </MudStack>
+                            </MudTh>
+                        </GroupHeaderTemplate>
+                        <RowTemplate>
+                            <MudTd>Chapter @(context.Attributes?.Chapter ?? "Unknown")</MudTd>
+                            <MudTd>@(context.Attributes?.Title ?? "Unknown")</MudTd>
+                            <MudTd>
+                                @{
+                                    string scanlationGroupId = context.Relationships?.FirstOrDefault(r => r.Type.Equals("scanlation_group"))?.Id ?? "";
+                                    ScanlationGroupResponse? scanlationGroupResponse = _scanlationGroups.FirstOrDefault(s => s.Id.Equals(scanlationGroupId));
+                                }
+                                <MudStack Row="true">
+                                    <MudIcon Size="Size.Small" Icon="@Icons.Material.Filled.Groups"></MudIcon>
+                                    <MudLink Href="@($"https://mangadex.org/group/{scanlationGroupId}")">@(scanlationGroupResponse != null ? scanlationGroupResponse.Attributes?.Name : "Unknown")</MudLink>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd>
+                                <MudStack Row="true">
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.MenuBook" OnClick="@(() => DownloadChapter(context.Id, context.Attributes?.Chapter!, DownloadType.CBZ))">Download .cbz</MudButton>
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.PictureAsPdf" OnClick="@(() => DownloadChapter(context.Id, context.Attributes?.Chapter!, DownloadType.PDF))">Download .pdf</MudButton>
+                                </MudStack>
+    
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
+                        No volumes or chapters found.
+                    </MudAlert>
+                }
+            </MudItem>
+        </MudGrid>    
+    }
+</MudContainer>
 
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
-            }
-            else
-            {
-                <MudAlert Severity="Severity.Info" Variant="Variant.Filled">
-                    No volumes or chapters found.
-                </MudAlert>
-            }
-        </MudItem>
-    </MudGrid>    
-}
 
 
 @code {
@@ -152,6 +162,8 @@ else
     
     private List<ScanlationGroupResponse> _scanlationGroups = new List<ScanlationGroupResponse>();
 
+    private Author? _author;
+    
     private Downloader? _downloader;
     
     private readonly TableGroupDefinition<Chapter> _groupDefinition = new TableGroupDefinition<Chapter>
@@ -174,6 +186,7 @@ else
         _filteredCount = feed.Filtered;
         _duplicateCount = feed.Duplicate;
         _scanlationGroups = await MangaMetadataService.GetScanlationGroupsForFeed(feed);
+        _author = await MangaMetadataService.GetAuthorByManga(_manga!);
         _loading = false;
     }
 

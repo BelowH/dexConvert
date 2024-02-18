@@ -10,9 +10,27 @@
     <MudItem xs="12"  Class="d-flex justify-center">
         <PageTitle>Dex Convert</PageTitle>
     </MudItem>
+    @if (_searchResults == null || !_searchResults.Any())
+    {
+        <MudItem xs="12" Class="align-content-center">
+            <MudGrid>
+                <MudItem Class="d-flex align-center justify-center mud-width-full" xs="12">
+                    <MudHidden Breakpoint="Breakpoint.MdAndDown">
+                        <MudImage Src="logo.png" Width="256" Height="256"></MudImage>
+                    </MudHidden>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudText Align="Align.Center" Typo="Typo.h5" Class="ma-4">
+                        Easily download and convert your favorite <MudLink Typo="Typo.h5" Href="https://mangadex.org">MangaDex</MudLink> manga into <b style="color: #40A4FF">.cbz</b> or <b style="color: #40A4FF">PDF</b> files.<br/>
+                        Simply enter the manga title in the search bar below, and start downloading!
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+        </MudItem>
+    }
     <MudItem xs="12">
         <MudStack Row="true" Class="pa-2">
-            <MudTextField T="string" @bind-value="_searchText" Label="Search Manga" Variant="Variant.Filled" HelperTextOnFocus="true" HelperText="e.g.: Attack on Titan" TextChanged="() => _hasTextChanged = true"></MudTextField>
+            <MudTextField T="string" @bind-value="_searchText" Label="Search Manga" Variant="Variant.Outlined" HelperTextOnFocus="true" HelperText="e.g.: Attack on Titan" TextChanged="() => _hasTextChanged = true"></MudTextField>
             <MudButton Variant="Variant.Outlined" Disabled="_loading" Color="Color.Primary" OnClick="LoadManga" Style="height: 60px">
                 @if(_loading)
                 {
@@ -116,6 +134,12 @@
         set => PreferenceService.SetDeepSearch(value);
         get => PreferenceService.GetDeepSearch();
     }
+
+    protected override void OnInitialized()
+    {
+        _searchResults = MangaService.GetSearch();
+    }
+
 
     private async Task LoadManga()
     {

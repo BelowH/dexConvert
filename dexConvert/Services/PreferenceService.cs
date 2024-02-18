@@ -4,38 +4,43 @@ namespace dexConvert.Services;
 
 public class PreferenceService : IPreferenceService
 {
-
-    private static Dictionary<string, string> _supportedLangs = new Dictionary<string, string>()
+    
+    
+    private static readonly Dictionary<string, List<string>> Alternatives = new Dictionary<string, List<string>>()
     {
-        {"gb", "English" },
-        {"tw", "Simplified Chinese"},
-        {"es", "Spanish"},
-        {"jp", "Japanese"},
-        {"kr", "Korean"},
-        {"de", "German"}
-    };
-
-    private static Dictionary<string, List<string>> _alternatives = new Dictionary<string, List<string>>()
-    {
-        { "tw", new List<string>() { "zh-hk", "zh-ro", "zh" } },
+        { "zh", new List<string>() { "zh-hk", "zh-ro", "zh" } },
         { "es", new List<string>() { "es", "es-la" } },
         { "jp", new List<string>() { "ja-ro", "ja", "jp" } },
         { "kr", new List<string>() { "ko-ro", "ko" } },
-        { "gb", new List<string>() { "en" } },
+        { "en", new List<string>() { "gb" } },
     };
 
+
+    private readonly Dictionary<string, string> _cultures = new Dictionary<string, string>()
+    {
+        {"zh", "Chinese"},
+        {"es", "Spanish"},
+        {"en", "English"},
+        {"hi", "Hindi"},
+        {"bn", "Bengali"},
+        {"pt", "Portuguese"},
+        {"ru", "Russian"},
+        {"ja", "Japanese"},
+        {"pa", "Punjabi"},
+        {"mr", "Marathi"},
+        {"te", "Telugu"},
+        {"tr", "Turkish"},
+        {"ko", "Korean"},
+        {"fr", "French"},
+        {"de", "German"},
+    };
     
-    
-    
-    private string _preferenceKey = "gb";
+    private string _preferenceKey = "en";
     
     private bool _deepSearch = false;
-
     public EventHandler<string>? OnPreferenceChanged { get; set; }
 
-    public string GetPreferenceName() => _supportedLangs[_preferenceKey];
-
-    public Dictionary<string, string> GetAvailableLanguages() => _supportedLangs;
+    public Dictionary<string, string> GetAvailableLanguages() => _cultures;
 
     public void SetCulturePreference(string key)
     {
@@ -45,8 +50,11 @@ public class PreferenceService : IPreferenceService
 
     public List<string> GetLangPreferenceForSearch()
     {
-        List<string> langs = new List<string>();
-        langs.AddRange(_alternatives[_preferenceKey]);
+        List<string> langs = new List<string> { _preferenceKey };
+        if (Alternatives.TryGetValue(_preferenceKey, out List<string>? alternative))
+        {
+            langs.AddRange(alternative);
+        }
         return langs;
     }
 
@@ -58,5 +66,11 @@ public class PreferenceService : IPreferenceService
     public bool GetDeepSearch()
     {
         return _deepSearch;
+    }
+    
+    public List<string> GetSelectedLanguage()
+    {
+        List<string> list = new List<string> { _cultures.TryGetValue(_preferenceKey, out string? lang) ? lang : "English" };
+        return list;
     }
 }
