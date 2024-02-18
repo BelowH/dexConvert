@@ -19,6 +19,20 @@
         background: linear-gradient(90deg,  rgba(23,62,98,1) 0%,rgba(175,105,239,1) 100%);
         border-color:  rgba(23,62,98,1);
     }
+    
+    .donationButton{
+        color: #1a1e21;
+        background: rgb(255,255,139);
+        background: linear-gradient(90deg, rgba(255,255,139,1) 0%, rgba(255,173,0,1) 100%);
+        border-color:  rgba(255,173,0,1);
+    }
+    
+    .donationButton:hover{
+            color: #1a1e21;
+            background: rgb(255,255,139);
+            background: linear-gradient(90deg, rgba(255,173,0,1) 0%, rgba(255,255,139,1)  100%);
+            border-color: rgba(255,255,139,1);
+        }
 
 </style>
 
@@ -48,8 +62,9 @@
             Results and Content powered by <MudLink Href="https://mangadex.org">MangaDex</MudLink> API
         </MudText>
         <MudSpacer></MudSpacer>
+        <MudButton Class="mr-4 ml-4 donationButton" Variant="Variant.Outlined" Href="https://www.buymeacoffee.com/belowh" StartIcon="@Icons.Material.Filled.Coffee">Buy me a coffee</MudButton>
         <MudButton Class="mr-4 ml-4 gradientButton" Variant="Variant.Outlined" Href="https://github.com/BelowH/dexConvert/issues" StartIcon="@Icons.Material.Filled.BugReport">Report a bug</MudButton>
-        <MudLink Href="https://github.com/BelowH">
+        <MudLink Href="https://github.com/BelowH/dexConvert">
             <MudIcon Icon="@Icons.Custom.Brands.GitHub"></MudIcon>
         </MudLink>
     </MudAppBar>
