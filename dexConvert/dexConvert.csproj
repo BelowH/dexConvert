@@ -23,4 +23,8 @@
       </Content>
     </ItemGroup>
 
+    <PropertyGroup>
+        <PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
+    </PropertyGroup>
+    
 </Project>
