@@ -1,5 +1,8 @@
 name: Deploy Blazor App to GitHub Pages
 
+permissions:
+  contents: write
+  
 on:
   push:
     branches:
@@ -14,16 +17,17 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 6.0.0  # Adjust to match your project's .NET version
+        dotnet-version: '6.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore ./dexConvert/dexConvert.csproj
 
     - name: Publish
-      run: dotnet publish -c Release -o build
+      run: dotnet publish ./dexConvert/dexConvert.csproj -c Release -o build
 
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@4.1.4
       with:
         branch: gh-pages  # The branch the action should deploy to.
         folder: build/wwwroot  # The folder the action should deploy.
+        token: ${{ secrets.DEPLOY_TOKEN }}
