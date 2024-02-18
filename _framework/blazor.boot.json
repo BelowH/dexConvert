@@ -8,7 +8,7 @@
   "resources": {
     "assembly": {
       "BouncyCastle.Crypto.dll": "sha256-MzkDx9IqJwmORfxkt3omSqIgYFz70+MpwgDX5LQsiBw=",
-      "dexConvert.dll": "sha256-rt8ik8mj\/ZThf5yOuxWwba2OUTxqQW\/u+SE09BqdMJc=",
+      "dexConvert.dll": "sha256-X7ACg+ZR7qo\/5irsurQhx+nytrLF27S01cxA5FkZ30U=",
       "itextsharp.dll": "sha256-zloQfa1DpBAe6z\/oT\/bRc6bVXzTwv\/cltTY2bxDplBA=",
       "Microsoft.AspNetCore.Components.dll": "sha256-Ky2evN3BtThR2f62SwGBmtEcgMpX+FVt0ptnh4XTHt8=",
       "Microsoft.AspNetCore.Components.Forms.dll": "sha256-udNyUy\/sZAZ\/kxTnPv6xOca1oek7ooUvUN5ljQbHKxo=",
